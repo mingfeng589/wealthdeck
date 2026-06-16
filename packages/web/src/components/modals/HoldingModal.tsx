@@ -190,12 +190,19 @@ const HoldingModal: React.FC<HoldingModalProps> = ({
           }
           sym = 'cg_' + id;
           kind = 'crypto';
-        } else if (market === 'us') {
-          sym = 'us' + t.toUpperCase();
-        } else if (market === 'hk') {
-          sym = 'hk' + t.padStart(5, '0');
         } else {
-          sym = (t.startsWith('6') || t.startsWith('5') ? 'sh' : 'sz') + t;
+          // Auto-detect crypto even when market is not 'cg'
+          const cgId = CG_MAP[t.toUpperCase()];
+          if (cgId) {
+            sym = 'cg_' + cgId;
+            kind = 'crypto';
+          } else if (market === 'us') {
+            sym = 'us' + t.toUpperCase();
+          } else if (market === 'hk') {
+            sym = 'hk' + t.padStart(5, '0');
+          } else {
+            sym = (t.startsWith('6') || t.startsWith('5') ? 'sh' : 'sz') + t;
+          }
         }
       }
 
