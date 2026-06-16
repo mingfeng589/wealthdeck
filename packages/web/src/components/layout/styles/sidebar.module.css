@@ -139,34 +139,37 @@
   }
 
   .topRow {
-    display: flex;
+    display: grid;
+    grid-template-columns: auto 1fr auto;
     align-items: center;
-    gap: 14px;
-    flex-wrap: wrap;
+    gap: 10px;
   }
 
   .brand {
-    font-size: 16px;
+    font-size: 14px;
     margin-bottom: 0;
+    gap: 6px;
   }
 
   .dot {
-    width: 22px;
-    height: 22px;
+    width: 20px;
+    height: 20px;
+  }
+
+  .brandText small {
+    display: none;
   }
 
   .nwBlock {
-    flex: 1;
-    min-width: 120px;
+    text-align: center;
   }
 
   .nwLabel {
-    margin-top: 0;
-    font-size: 10px;
+    display: none;
   }
 
   .nwValue {
-    font-size: 20px;
+    font-size: 18px;
   }
 
   .nwChg {
@@ -176,7 +179,7 @@
 
   .expandBtn {
     display: block;
-    padding: 6px 12px;
+    padding: 5px 10px;
     border: 1px solid var(--line);
     border-radius: 8px;
     background: var(--card);

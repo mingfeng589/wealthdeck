@@ -9,6 +9,7 @@ interface TopNavProps {
   onCcyChange: (ccy: string) => void;
   onRefresh: () => void;
   onExport: () => void;
+  onBackupJson: () => void;
   onImport: () => void;
   onAdd: () => void;
 }
@@ -28,6 +29,7 @@ const TopNav: React.FC<TopNavProps> = ({
   onCcyChange,
   onRefresh,
   onExport,
+  onBackupJson,
   onImport,
   onAdd,
 }) => {
@@ -64,7 +66,10 @@ const TopNav: React.FC<TopNavProps> = ({
           ↻ 刷新
         </button>
         <button className={styles.btn} onClick={onExport}>
-          导出
+          导出Excel
+        </button>
+        <button className={styles.btn} onClick={onBackupJson}>
+          备份
         </button>
         <button className={styles.btn} onClick={onImport}>
           导入

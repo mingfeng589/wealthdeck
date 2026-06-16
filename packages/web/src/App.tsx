@@ -21,6 +21,7 @@ import { PlanTab } from './components/plan/PlanTab';
 import { ImproveTab } from './components/improve/ImproveTab';
 import { MoreTab } from './components/more/MoreTab';
 import { HoldingModal, GoalModal, PolicyModal } from './components/modals';
+import { exportToXlsx } from './services/export-xlsx';
 import appStyles from './styles/app.module.css';
 
 type TabKey = 'track' | 'plan' | 'improve' | 'more';
@@ -204,6 +205,11 @@ export default function App() {
 
   const handleExport = async () => {
     const data = await store.exportAll();
+    exportToXlsx(data);
+  };
+
+  const handleBackupJson = async () => {
+    const data = await store.exportAll();
     const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
     const a = document.createElement('a');
     a.href = URL.createObjectURL(blob);
@@ -263,6 +269,7 @@ export default function App() {
           onCcyChange={(c: string) => state.setBaseCcy(c as Currency)}
           onRefresh={handleRefresh}
           onExport={handleExport}
+          onBackupJson={handleBackupJson}
           onImport={handleImport}
           onAdd={() => { setEditHolding(null); setHoldingDefaultCat(undefined); setHoldingModalOpen(true); }}
         />

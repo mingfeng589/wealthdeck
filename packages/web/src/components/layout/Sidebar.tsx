@@ -24,7 +24,7 @@ const Sidebar: React.FC<SidebarProps> = ({ netWorth, dayChange, dayPositive, cat
       <div className={styles.topRow}>
         <div className={styles.brand}>
           <span className={styles.dot} />
-          <div>
+          <div className={styles.brandText}>
             WealthDeck
             <br />
             <small>个人资产管理台</small>
