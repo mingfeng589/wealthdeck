@@ -1,0 +1,12 @@
+{
+  "name": "wealthdeck",
+  "private": true,
+  "workspaces": [
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "npm run dev -w @wealthdeck/web",
+    "build": "npm run build -w @wealthdeck/shared && npm run build -w @wealthdeck/web",
+    "typecheck": "tsc --noEmit -p packages/shared/tsconfig.json && tsc --noEmit -p packages/web/tsconfig.json"
+  }
+}

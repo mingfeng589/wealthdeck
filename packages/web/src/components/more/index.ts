@@ -1,0 +1,1 @@
+export { MoreTab } from './MoreTab';

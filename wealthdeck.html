@@ -1,0 +1,1342 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>WealthDeck · 资产总览</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+:root{
+  --bg:#f4f6f9; --card:#ffffff; --ink:#1a2332; --muted:#6b7686; --line:#e6eaf0;
+  --accent:#1f5eff; --accent-soft:#eef3ff; --green:#0e9f6e; --red:#e0245e; --amber:#b45309;
+}
+*{box-sizing:border-box;margin:0;padding:0;font-family:"PingFang SC","Microsoft YaHei",-apple-system,Segoe UI,Roboto,sans-serif}
+body{background:var(--bg);color:var(--ink);font-size:14px}
+.layout{display:flex;min-height:100vh}
+.sidebar{width:264px;background:var(--card);border-right:1px solid var(--line);padding:18px 16px;flex-shrink:0}
+.brand{display:flex;align-items:center;gap:8px;font-size:19px;font-weight:700;margin-bottom:4px}
+.brand .dot{width:26px;height:26px;border-radius:50%;background:conic-gradient(var(--accent) 0 40%,#19c39c 40% 70%,#e8a13c 70% 100%)}
+.brand small{font-size:11px;color:var(--muted);font-weight:400}
+.nw-label{margin-top:18px;font-size:11px;letter-spacing:.08em;color:var(--muted)}
+.nw-value{font-size:25px;font-weight:700;margin:2px 0 2px}
+.nw-chg{font-size:12px;margin-bottom:10px}
+.cat-block{margin-top:13px;border-top:1px solid var(--line);padding-top:9px}
+.cat-head{display:flex;justify-content:space-between;align-items:center;font-size:11px;letter-spacing:.06em;color:var(--muted)}
+.cat-head b{display:flex;align-items:center;gap:6px;font-weight:600}
+.cat-head .swatch{width:8px;height:8px;border-radius:2px;display:inline-block}
+.cat-add{cursor:pointer;color:var(--accent);font-size:16px;line-height:1;border:none;background:none}
+.cat-row{display:flex;justify-content:space-between;padding:3px 0;font-size:12.5px;cursor:pointer}
+.cat-row:hover{color:var(--accent)}
+.cat-row span:last-child{font-variant-numeric:tabular-nums}
+.cat-sub{font-size:11px;color:var(--muted);text-align:right;margin-top:2px}
+.main{flex:1;padding:18px 22px;min-width:0}
+.topnav{display:flex;gap:4px;margin-bottom:14px;align-items:center;flex-wrap:wrap}
+.tabbtn{padding:8px 16px;border-radius:9px;border:none;background:none;font-size:15px;font-weight:600;color:var(--muted);cursor:pointer}
+.tabbtn.on{background:var(--card);color:var(--accent);box-shadow:0 1px 3px rgba(20,30,60,.08)}
+.topnav .spacer{flex:1}
+.controls{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.btn{padding:7px 13px;border-radius:8px;border:1px solid var(--line);background:var(--card);cursor:pointer;font-size:13px}
+.btn.primary{background:var(--accent);color:#fff;border-color:var(--accent)}
+.btn.sm{padding:4px 10px;font-size:12px}
+.btn:hover{opacity:.88}
+select.btn{padding:6px 8px}
+.muted{color:var(--muted);font-size:12px}
+.kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:14px}
+.kpi{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:13px 15px}
+.kpi .t{font-size:12px;color:var(--muted)}
+.kpi .v{font-size:20px;font-weight:700;margin-top:4px;font-variant-numeric:tabular-nums}
+.kpi .s{font-size:12px;margin-top:2px}
+.track-grid{display:grid;grid-template-columns:1fr 320px;gap:14px;align-items:start}
+.track-left{min-width:0}
+.grid2{display:grid;grid-template-columns:1.35fr 1fr;gap:12px;margin-bottom:14px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:15px;margin-bottom:14px}
+.card h3{font-size:14px;margin-bottom:10px}
+.chart-box{position:relative;height:225px}
+.pulse h3{display:flex;align-items:center;gap:6px}
+.pulse-sec{border-top:1px solid var(--line);padding:10px 0}
+.pulse-sec .ttl{font-size:12.5px;font-weight:700;margin-bottom:5px}
+.pulse-sec p{font-size:12.5px;line-height:1.65;color:#37404e}
+.newsitem{padding:6px 0;border-bottom:1px dashed var(--line)}
+.newsitem:last-child{border-bottom:none}
+.newsitem a{font-size:12.5px;color:var(--ink);text-decoration:none;line-height:1.5;display:block}
+.newsitem a:hover{color:var(--accent)}
+.newsitem .src{font-size:11px;color:var(--muted);margin-top:2px}
+.topic-tag{display:inline-block;font-size:10.5px;background:var(--accent-soft);color:var(--accent);border-radius:9px;padding:1px 8px;margin-bottom:3px}
+table{width:100%;border-collapse:collapse}
+th{font-size:11px;color:var(--muted);text-align:left;padding:7px 6px;border-bottom:1px solid var(--line)}
+td{padding:8px 6px;border-bottom:1px solid var(--line);font-size:13px;font-variant-numeric:tabular-nums}
+td .nm{font-weight:600}
+td .cd{font-size:11px;color:var(--muted)}
+.tag{font-size:10.5px;padding:2px 7px;border-radius:10px;color:#fff;white-space:nowrap}
+.tag.ghost{background:#eef1f6;color:var(--muted)}
+.up{color:var(--green)} .down{color:var(--red)}
+.act{cursor:pointer;color:var(--muted);margin-right:7px;background:none;border:none;font-size:12px}
+.act:hover{color:var(--accent)}
+.goal-pick{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin:10px 0}
+.goal-pick .gp{border:1px solid var(--line);border-radius:12px;padding:18px 14px;text-align:center;cursor:pointer;background:var(--card)}
+.goal-pick .gp:hover{border-color:var(--accent);box-shadow:0 2px 8px rgba(31,94,255,.12)}
+.goal-pick .gp .ic{font-size:28px}
+.goal-pick .gp .nm{font-weight:700;margin-top:6px}
+.goal-pick .gp .ds{font-size:11.5px;color:var(--muted);margin-top:4px;line-height:1.5}
+.goal-card .ghead{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px}
+.goal-card .ghead h3{font-size:16px;margin:0}
+.gstats{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin:10px 0}
+.gstat{background:var(--bg);border-radius:10px;padding:9px 12px}
+.gstat .t{font-size:11px;color:var(--muted)} .gstat .v{font-size:16px;font-weight:700;margin-top:2px}
+.gbar{height:8px;background:#e9edf3;border-radius:4px;overflow:hidden;margin:6px 0 4px}
+.gbar i{display:block;height:100%;background:linear-gradient(90deg,var(--accent),#19c39c)}
+.gcols{display:grid;grid-template-columns:1.2fr 1fr;gap:14px;margin-top:10px}
+.ledger-add{display:grid;grid-template-columns:1.1fr 1fr .8fr 1fr auto;gap:6px;margin-top:8px}
+.ledger-add input,.ledger-add select{padding:6px 8px;border:1px solid var(--line);border-radius:7px;font-size:12.5px;width:100%}
+.score-wrap{display:flex;gap:18px;align-items:center;margin-bottom:8px}
+.score-num{font-size:46px;font-weight:800}
+.subscores{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;flex:1}
+.subscore{background:var(--bg);border-radius:10px;padding:9px 12px;text-align:center}
+.subscore .v{font-size:18px;font-weight:700}
+.subscore .t{font-size:11px;color:var(--muted)}
+.statgrid{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:8px}
+.stat{background:var(--bg);border-radius:10px;padding:11px 13px}
+.stat .t{font-size:11px;color:var(--muted)}
+.stat .v{font-size:17px;font-weight:700;margin-top:3px}
+.stat .s{font-size:11px;color:var(--muted);margin-top:2px}
+.actions li{margin:8px 0 8px 18px;font-size:13px;line-height:1.6}
+.pillrow{display:flex;gap:8px;margin:10px 0;flex-wrap:wrap}
+.pill{padding:7px 14px;border-radius:18px;border:1px solid var(--line);background:var(--card);cursor:pointer;font-size:13px}
+.pill.on{background:var(--accent);color:#fff;border-color:var(--accent)}
+.guide{font-size:13px;line-height:1.75}
+.guide details{border:1px solid var(--line);border-radius:10px;padding:10px 14px;margin:8px 0;background:#fbfcfe}
+.guide summary{font-weight:700;cursor:pointer;font-size:13.5px}
+.guide ul{margin:6px 0 2px 18px}
+.guide li{margin:4px 0}
+.corr-table{overflow:auto;margin-top:10px}
+.corr-table table{font-size:11.5px}
+.corr-table td,.corr-table th{padding:5px 7px;text-align:center;white-space:nowrap}
+.warn{background:#fef6ec;border:1px solid #f3dfc0;border-radius:10px;padding:10px 14px;font-size:12.5px;line-height:1.7;margin:10px 0;color:#7c5210}
+.ok{background:#f0faf5;border-color:#c6e9d4;color:#14613c}
+.profile-row{display:grid;grid-template-columns:repeat(3,1fr) auto;gap:8px;margin:8px 0}
+.profile-row input{padding:7px 9px;border:1px solid var(--line);border-radius:8px;font-size:13px;width:100%}
+.overlay{position:fixed;inset:0;background:rgba(20,28,45,.45);display:none;align-items:flex-start;justify-content:center;padding-top:6vh;z-index:50}
+.overlay.show{display:flex}
+.modal{background:#fff;border-radius:14px;width:470px;max-width:94vw;padding:20px;max-height:86vh;overflow:auto}
+.modal h2{font-size:16px;margin-bottom:14px}
+.f{margin-bottom:11px}
+.f label{display:block;font-size:12px;color:var(--muted);margin-bottom:4px}
+.f input,.f select{width:100%;padding:8px 10px;border:1px solid var(--line);border-radius:8px;font-size:14px}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.sugg{border:1px solid var(--line);border-radius:8px;max-height:190px;overflow:auto;margin-top:4px;display:none}
+.sugg div{padding:7px 10px;cursor:pointer;font-size:13px;display:flex;justify-content:space-between;gap:8px}
+.sugg div:hover{background:var(--accent-soft)}
+.sugg div small{color:var(--muted);white-space:nowrap}
+.modal .foot{display:flex;justify-content:flex-end;gap:8px;margin-top:6px}
+.hint{font-size:11px;color:var(--muted);margin-top:4px}
+.footer-note{font-size:11px;color:var(--muted);margin:16px 0 30px;line-height:1.7}
+@media(max-width:1100px){.track-grid{grid-template-columns:1fr}.goal-pick{grid-template-columns:repeat(2,1fr)}.statgrid{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:980px){.layout{flex-direction:column}.sidebar{width:100%}.kpis{grid-template-columns:repeat(2,1fr)}.grid2,.gcols{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="layout">
+  <aside class="sidebar">
+    <div class="brand"><span class="dot"></span><div>WealthDeck<br><small>个人资产管理台</small></div></div>
+    <div class="nw-label">NET WORTH 总净值</div>
+    <div class="nw-value" id="sbNW">--</div>
+    <div class="nw-chg" id="sbChg">--</div>
+    <div id="sbCats"></div>
+  </aside>
+
+  <main class="main">
+    <div class="topnav">
+      <button class="tabbtn on" data-tab="track" onclick="showTab('track')">Track 总览</button>
+      <button class="tabbtn" data-tab="plan" onclick="showTab('plan')">Plan 规划</button>
+      <button class="tabbtn" data-tab="improve" onclick="showTab('improve')">Improve 优化</button>
+      <button class="tabbtn" data-tab="more" onclick="showTab('more')">More 其他</button>
+      <span class="spacer"></span>
+      <div class="controls">
+        <span class="muted" id="lastUpd">未更新</span>
+        <select class="btn" id="baseCcy"><option value="USD">USD $</option><option value="CNY">CNY ¥</option><option value="HKD">HKD HK$</option></select>
+        <button class="btn" id="btnRefresh">↻ 刷新</button>
+        <button class="btn" id="btnExport">导出</button>
+        <button class="btn" id="btnImport">导入</button>
+        <button class="btn primary" id="btnAdd">＋ 添加资产</button>
+      </div>
+    </div>
+
+    <!-- ================= TRACK ================= -->
+    <section id="tab-track">
+      <div class="kpis">
+        <div class="kpi"><div class="t">总净值 Net Worth</div><div class="v" id="kNW">--</div><div class="s" id="kNWs"></div></div>
+        <div class="kpi"><div class="t">今日变动 Day Change</div><div class="v" id="kDay">--</div><div class="s" id="kDays"></div></div>
+        <div class="kpi"><div class="t">现金 Cash</div><div class="v" id="kCash">--</div><div class="s muted" id="kCashs"></div></div>
+        <div class="kpi"><div class="t">持仓项 Holdings</div><div class="v" id="kCnt">0</div><div class="s muted">7 个资产类别</div></div>
+      </div>
+      <div class="track-grid">
+        <div class="track-left">
+          <div class="grid2">
+            <div class="card" style="margin-bottom:0"><h3>净值走势</h3><div class="chart-box"><canvas id="chLine"></canvas></div></div>
+            <div class="card" style="margin-bottom:0"><h3>资产配置 Asset Classes</h3><div class="chart-box"><canvas id="chDonut"></canvas></div></div>
+          </div>
+          <div style="height:14px"></div>
+          <div class="card">
+            <h3>持仓明细 Holdings</h3>
+            <table>
+              <thead><tr><th>名称 / 代码</th><th>类别</th><th>账户</th><th>数量</th><th>现价</th><th>日涨跌</th><th id="thVal">市值</th><th>盈亏</th><th></th></tr></thead>
+              <tbody id="tbody"></tbody>
+            </table>
+            <div class="muted" id="emptyHint" style="padding:16px 6px">暂无资产，点击右上角「＋ 添加资产」开始。</div>
+          </div>
+        </div>
+        <div class="card pulse" style="margin-bottom:0">
+          <h3>📡 Portfolio Pulse</h3>
+          <div class="pulse-sec"><div class="ttl">📅 Daily Update</div><p id="pulseDaily">行情加载中…</p></div>
+          <div class="pulse-sec"><div class="ttl">🌐 General Market News</div><div id="pulseGeneral" class="muted">加载中…</div></div>
+          <div class="pulse-sec"><div class="ttl">🎯 Macro Radar</div><p id="pulseMacro">--</p></div>
+          <div class="pulse-sec"><div class="ttl">🔗 News related to you <span class="muted" style="font-weight:400">基于持仓自动匹配</span></div><div id="pulseMine" class="muted">添加持仓后自动生成。</div></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= PLAN ================= -->
+    <section id="tab-plan" style="display:none">
+      <div class="card">
+        <h3>选择你的储蓄目标（只展示你选择的，不强推）</h3>
+        <div class="goal-pick">
+          <div class="gp" onclick="openGoalModal('edu')"><div class="ic">🎓</div><div class="nm">孩子教育基金</div><div class="ds">红包记账 + 独立账户 + 留学/读书目标</div></div>
+          <div class="gp" onclick="openGoalModal('retire')"><div class="ic">🌅</div><div class="nm">养老规划</div><div class="ds">退休年龄、月供、退休后支出推演</div></div>
+          <div class="gp" onclick="openGoalModal('home')"><div class="ic">🏠</div><div class="nm">购房储蓄</div><div class="ds">首付目标、期限、每月需储蓄额</div></div>
+          <div class="gp" onclick="openGoalModal('custom')"><div class="ic">🎯</div><div class="nm">自定义目标</div><div class="ds">任意目标金额与期限</div></div>
+        </div>
+      </div>
+      <div id="goalList"></div>
+    </section>
+
+    <!-- ================= IMPROVE ================= -->
+    <section id="tab-improve" style="display:none">
+      <div class="card">
+        <h3>Portfolio Stats 组合统计</h3>
+        <div class="statgrid">
+          <div class="stat"><div class="t">Total amount 总额</div><div class="v" id="stTotal">--</div></div>
+          <div class="stat"><div class="t">Cash investable 可投资现金</div><div class="v" id="stCash">--</div><div class="s" id="stCashS"></div></div>
+          <div class="stat"><div class="t">Overall exp. returns 预期收益</div><div class="v" id="stRet">--</div><div class="s" id="stRetS"></div></div>
+          <div class="stat"><div class="t">Exp. risk 预期风险（年化σ）</div><div class="v" id="stRisk">--</div><div class="s" id="stRiskS"></div></div>
+          <div class="stat"><div class="t">Dividend &amp; fixed income</div><div class="v" id="stDiv">--</div><div class="s">每年股息+票息+现金利息</div></div>
+        </div>
+        <details class="muted" style="font-size:12px;line-height:1.7"><summary style="cursor:pointer">计算口径与假设（点开）</summary>
+          预期收益采用长期资本市场假设：美股 6.5%/港股 7%/A股 7.5%（宽基指数同），债券=票息或 3.5%，房地产 4%（含 2% 净租金），PE 10%，黄金/白银 3%，原油 2%，现金按货币市场利率（USD 4%/HKD 3.5%/CNY 1.8%），加密资产与杠杆 ETF 不设预期收益（按 0 计，视为投机性敞口）。
+          预期风险 σ = √(wᵀΣw)：已计算相关性矩阵的持仓使用实测 120 日波动率与相关系数，其余使用类别假设（美股22%/港股25%/A股28%/加密65%/杠杆ETF 60%/债券6%/黄金15%/房产10%/PE 20%）与类别间默认相关系数。股息率假设：美股 1.3%/港股 3.5%/A股 2.5%。以上为简化模型，结果随行情与假设变化，不构成投资建议。
+        </details>
+      </div>
+
+      <div class="card">
+        <h3>组合体检 Portfolio Score</h3>
+        <div class="score-wrap">
+          <div><div class="score-num" id="impScore">--</div><div class="muted" id="impGrade"></div></div>
+          <div class="subscores" id="impSubs"></div>
+        </div>
+        <ul class="actions" id="impActions"></ul>
+      </div>
+
+      <div class="card">
+        <h3>风险调整后收益 · 相关性矩阵</h3>
+        <p class="muted" style="line-height:1.7">基于近 120 个交易日日收益率实算（腾讯K线 + CoinGecko），按需计算、缓存 24 小时。相关系数 &gt;0.75 的持仓对将被标记，并自动用于上方「预期风险」的计算。</p>
+        <div style="margin-top:10px"><button class="btn primary" id="btnCorr">计算 / 更新相关性</button> <span class="muted" id="corrStat"></span></div>
+        <div class="corr-table" id="corrBox"></div>
+        <div id="corrWarns"></div>
+      </div>
+    </section>
+
+    <!-- ================= MORE ================= -->
+    <section id="tab-more" style="display:none">
+      <div class="card">
+        <h3>🛡️ 保险与健康保障 Insurance &amp; Protection</h3>
+        <div class="muted" style="margin-bottom:8px">填入家庭基础数据后，下方体检规则自动运行（数据仅存本机）：</div>
+        <div class="profile-row">
+          <input id="pfIncome" type="number" placeholder="家庭年收入（基准币）">
+          <input id="pfSpend" type="number" placeholder="家庭年支出（基准币）">
+          <input id="pfDebt" type="number" placeholder="家庭负债余额（房贷等）">
+          <button class="btn sm primary" onclick="saveProfile()">保存</button>
+        </div>
+        <div class="statgrid" style="grid-template-columns:repeat(4,1fr)">
+          <div class="stat"><div class="t">年缴保费合计</div><div class="v" id="insPrem">--</div><div class="s" id="insPremS"></div></div>
+          <div class="stat"><div class="t">重疾总保额</div><div class="v" id="insCI">--</div></div>
+          <div class="stat"><div class="t">寿险总保额</div><div class="v" id="insLife">--</div></div>
+          <div class="stat"><div class="t">保单现金价值（计入净值）</div><div class="v" id="insCV">--</div></div>
+        </div>
+        <ul class="actions" id="insChecks"></ul>
+        <h3 style="margin-top:14px">保单清单 <button class="cat-add" onclick="openPolicy()">＋</button></h3>
+        <table><thead><tr><th>类型</th><th>保单 / 公司</th><th>被保险人</th><th>保额</th><th>年缴保费</th><th>现金价值</th><th></th></tr></thead><tbody id="polBody"></tbody></table>
+        <div class="muted" id="polEmpty" style="padding:12px 6px">还没有保单记录。点 ＋ 添加重疾/寿险/医疗/意外/年金保单。</div>
+      </div>
+
+      <div class="card">
+        <h3>税务视角 Tax Lens</h3>
+        <div class="pillrow" id="taxPills">
+          <button class="pill on" data-k="cn" onclick="pickTax('cn')">中国内地</button>
+          <button class="pill" data-k="hk" onclick="pickTax('hk')">香港</button>
+          <button class="pill" data-k="sg" onclick="pickTax('sg')">新加坡</button>
+          <button class="pill" data-k="us" onclick="pickTax('us')">美国</button>
+        </div>
+        <div class="guide" id="taxBody"></div>
+      </div>
+
+      <div class="card">
+        <h3>身份规划 Identity Lens</h3>
+        <div class="pillrow" id="idPills">
+          <button class="pill on" data-k="hk" onclick="pickId('hk')">香港</button>
+          <button class="pill" data-k="us" onclick="pickId('us')">美国</button>
+          <button class="pill" data-k="sg" onclick="pickId('sg')">新加坡</button>
+          <button class="pill" data-k="jp" onclick="pickId('jp')">日本</button>
+          <button class="pill" data-k="pt" onclick="pickId('pt')">葡萄牙</button>
+          <button class="pill" data-k="xs" onclick="pickId('xs')">小国护照</button>
+        </div>
+        <div class="guide" id="idBody"></div>
+      </div>
+
+      <div class="warn">⚠️ 本页税务、身份与保险内容为一般性信息整理（知识截至 2025 年中，政策随时调整，葡萄牙国籍法、马耳他入籍计划等当时正处变动中），不构成税务、法律、移民、保险或投资建议。重大决策前请咨询持牌专业人士，并以官方最新公布为准。</div>
+    </section>
+
+    <div class="footer-note">
+      数据来源：股票/ETF/指数/期货/汇率 — 腾讯财经公开接口（约3-5秒延迟，港股免费源约15分钟）；美/港/A股成交额前1000排名 — 东方财富，每日缓存；加密货币 — CoinGecko；新闻 — Google News RSS 聚合（CoinDesk/CNBC/Reuters 等，经 rss2json 转换）；K线 — 腾讯历史K线。所有数据仅存于本机浏览器 localStorage。本工具不构成投资建议。
+    </div>
+  </main>
+</div>
+
+<!-- ============ 资产 MODAL ============ -->
+<div class="overlay" id="overlay">
+  <div class="modal">
+    <h2 id="mTitle">添加资产</h2>
+    <div class="row2">
+      <div class="f"><label>资产类别</label><select id="mCat"></select></div>
+      <div class="f"><label>所属账户</label><select id="mAcct"></select></div>
+    </div>
+    <div id="secFields">
+      <div class="f"><label>市场</label>
+        <select id="mMarket">
+          <option value="us">美股 US（个股前1000 + 指数/ETF）</option>
+          <option value="hk">港股 HK（个股前1000 + 指数/ETF）</option>
+          <option value="cn">A股 CN（个股前1000 + 指数/ETF）</option>
+          <option value="cg">加密货币 Crypto</option>
+        </select>
+      </div>
+      <div class="f"><label>搜索 / 代码</label>
+        <input id="mSearch" placeholder="如 700 / 腾讯 / SOXL / 科创50 / BTC" autocomplete="off">
+        <div class="sugg" id="mSugg"></div>
+        <div class="hint" id="mPicked"></div>
+      </div>
+      <div class="row2">
+        <div class="f"><label>数量</label><input id="mQty" type="number" step="any" placeholder="100"></div>
+        <div class="f"><label>单位成本（原币种，可选）</label><input id="mCost" type="number" step="any"></div>
+      </div>
+    </div>
+    <div id="cmdFields" style="display:none">
+      <div class="f"><label>报价联动</label>
+        <select id="mCmd">
+          <option value="hf_GC">纽约黄金 COMEX Gold（美元/盎司）</option>
+          <option value="hf_SI">纽约白银 COMEX Silver（美元/盎司）</option>
+          <option value="hf_CL">纽约原油 WTI（美元/桶）</option>
+          <option value="manual">手动估值（不联动）</option>
+        </select>
+      </div>
+      <div class="row2" id="cmdQtyRow">
+        <div class="f"><label>数量（盎司/桶）</label><input id="mCmdQty" type="number" step="any"></div>
+        <div class="f"><label>单位成本 USD（可选）</label><input id="mCmdCost" type="number" step="any"></div>
+      </div>
+    </div>
+    <div id="manFields" style="display:none">
+      <div class="f"><label>名称</label><input id="mName" placeholder="如：上海某公寓 / 美元货基 / 基金LP份额"></div>
+      <div class="row2">
+        <div class="f"><label>当前估值</label><input id="mVal" type="number" step="any"></div>
+        <div class="f"><label>币种</label><select id="mCcy"><option>USD</option><option>CNY</option><option>HKD</option></select></div>
+      </div>
+      <div class="row2">
+        <div class="f"><label>成本（可选）</label><input id="mCostM" type="number" step="any"></div>
+        <div class="f" id="couponWrap" style="display:none"><label>票息率 %（可选）</label><input id="mCoupon" type="number" step="any"></div>
+      </div>
+    </div>
+    <div class="foot"><button class="btn" id="mCancel">取消</button><button class="btn primary" id="mSave">保存</button></div>
+  </div>
+</div>
+
+<!-- ============ 目标 MODAL ============ -->
+<div class="overlay" id="gOverlay">
+  <div class="modal">
+    <h2 id="gTitle">新建目标</h2>
+    <div class="f"><label>名称</label><input id="gName"></div>
+    <div class="row2">
+      <div class="f"><label>目标金额（基准货币）</label><input id="gTarget" type="number" step="any"></div>
+      <div class="f"><label>目标年份</label><input id="gYear" type="number" step="1"></div>
+    </div>
+    <div class="row2">
+      <div class="f"><label>预期年化收益 %</label><input id="gRet" type="number" step="any" value="5"></div>
+      <div class="f"><label>计划每月追加</label><input id="gMonthly" type="number" step="any" value="0"></div>
+    </div>
+    <div id="gRetireFields" style="display:none">
+      <div class="row2">
+        <div class="f"><label>当前年龄</label><input id="gAgeNow" type="number" value="35"></div>
+        <div class="f"><label>退休年龄</label><input id="gAgeRet" type="number" value="60"></div>
+      </div>
+      <div class="row2">
+        <div class="f"><label>退休后每月支出（今天的钱）</label><input id="gSpend" type="number" value="20000"></div>
+        <div class="f"><label>退休后每月其他收入（社保/年金）</label><input id="gPension" type="number" value="5000"></div>
+      </div>
+    </div>
+    <div class="foot"><button class="btn" id="gDelete" style="display:none;color:var(--red)">删除目标</button><button class="btn" id="gCancel">取消</button><button class="btn primary" id="gSave">保存</button></div>
+  </div>
+</div>
+
+<!-- ============ 保单 MODAL ============ -->
+<div class="overlay" id="pOverlay">
+  <div class="modal">
+    <h2 id="pTitle">添加保单</h2>
+    <div class="row2">
+      <div class="f"><label>类型</label><select id="pType"><option value="ci">重疾险</option><option value="life">寿险</option><option value="med">医疗险</option><option value="acc">意外险</option><option value="ann">年金/储蓄分红</option><option value="oth">其他</option></select></div>
+      <div class="f"><label>被保险人</label><input id="pInsured" placeholder="本人 / 配偶 / 孩子"></div>
+    </div>
+    <div class="row2">
+      <div class="f"><label>保单名称</label><input id="pName" placeholder="如 XX重疾2025"></div>
+      <div class="f"><label>保险公司</label><input id="pCompany"></div>
+    </div>
+    <div class="row2">
+      <div class="f"><label>保额</label><input id="pSum" type="number" step="any"></div>
+      <div class="f"><label>保额币种</label><select id="pSumCcy"><option>CNY</option><option>USD</option><option>HKD</option></select></div>
+    </div>
+    <div class="row2">
+      <div class="f"><label>年缴保费</label><input id="pPrem" type="number" step="any"></div>
+      <div class="f"><label>保费币种</label><select id="pPremCcy"><option>CNY</option><option>USD</option><option>HKD</option></select></div>
+    </div>
+    <div class="row2">
+      <div class="f"><label>当前现金价值（储蓄型，可选）</label><input id="pCV" type="number" step="any"></div>
+      <div class="f"><label>现金价值币种</label><select id="pCVCcy"><option>CNY</option><option>USD</option><option>HKD</option></select></div>
+    </div>
+    <div class="f"><label>备注（缴费年限/到期日等）</label><input id="pNote"></div>
+    <div class="foot"><button class="btn" id="pCancel">取消</button><button class="btn primary" id="pSaveBtn">保存</button></div>
+  </div>
+</div>
+
+<input type="file" id="fileImp" accept=".json" style="display:none">
+
+<script>
+/* ================= 基础配置 ================= */
+const CATS={
+  securities:{label:'证券 Securities',color:'#3b6ff5'},
+  bond:{label:'债券 Bonds',color:'#8a5cf6'},
+  commodity:{label:'商品 Commodities',color:'#e8a13c'},
+  realestate:{label:'房地产 Real Estate',color:'#0ea5a4'},
+  pe:{label:'私募股权 Private Equity',color:'#5b8def'},
+  cash:{label:'现金 Cash',color:'#14803c'},
+  other:{label:'其他资产 Other Assets',color:'#e0552e'},
+};
+const GOAL_TYPES={
+  edu:{icon:'🎓',label:'孩子教育基金',ledgerFrom:'红包来自（如：爷爷奶奶）',defName:'宝宝教育基金'},
+  retire:{icon:'🌅',label:'养老规划',ledgerFrom:'来源',defName:'我的养老金'},
+  home:{icon:'🏠',label:'购房储蓄',ledgerFrom:'来源',defName:'首付基金'},
+  custom:{icon:'🎯',label:'自定义目标',ledgerFrom:'来源',defName:'新目标'},
+};
+const POL_TYPES={ci:'重疾险',life:'寿险',med:'医疗险',acc:'意外险',ann:'年金/储蓄',oth:'其他'};
+const LS={H:'wd_holdings',HIST:'wd_history',CCY:'wd_baseccy',G:'wd_goals',CORR:'wd_corr',RANKS:'wd_ranks',POL:'wd_policies',PF:'wd_profile'};
+let holdings=JSON.parse(localStorage.getItem(LS.H)||'[]').map(h=>({account:'main',...h}));
+let goals=JSON.parse(localStorage.getItem(LS.G)||'[]');
+let policies=JSON.parse(localStorage.getItem(LS.POL)||'[]');
+let profile=JSON.parse(localStorage.getItem(LS.PF)||'{}');
+let baseCcy=localStorage.getItem(LS.CCY)||'USD';
+let quotes={},fx={USDCNY:7.05,USDHKD:7.80},editId=null,gEditId=null,gNewType='custom',pEditId=null;
+const INDEXES=['sh000001','hkHSI','usDJI','usIXIC'];
+const CG_MAP={BTC:'bitcoin',ETH:'ethereum',SOL:'solana',BNB:'binancecoin',XRP:'ripple',DOGE:'dogecoin',ADA:'cardano',TRX:'tron',TON:'the-open-network',LINK:'chainlink',LTC:'litecoin',DOT:'polkadot',AVAX:'avalanche-2',USDT:'tether',USDC:'usd-coin'};
+const CG_LIST=Object.entries(CG_MAP).map(([c,id])=>({sym:'cg_'+id,code:c,name:c,kind:'crypto'}));
+
+/* ============ 指数与重点 ETF（kind 用于收益/风险假设） ============ */
+const IDX_ETF={
+us:[
+ {sym:'usDJI',code:'DJI',name:'道琼斯指数',kind:'idx'},{sym:'usIXIC',code:'IXIC',name:'纳斯达克综合指数',kind:'idx'},{sym:'usINX',code:'INX',name:'标普500指数',kind:'idx'},
+ {sym:'usSPY',code:'SPY',name:'标普500ETF-SPDR',kind:'etf'},{sym:'usVOO',code:'VOO',name:'标普500ETF-Vanguard',kind:'etf'},{sym:'usIVV',code:'IVV',name:'标普500ETF-iShares',kind:'etf'},
+ {sym:'usQQQ',code:'QQQ',name:'纳指100ETF',kind:'etf'},{sym:'usVTI',code:'VTI',name:'全市场ETF-Vanguard',kind:'etf'},{sym:'usDIA',code:'DIA',name:'道指ETF',kind:'etf'},{sym:'usIWM',code:'IWM',name:'罗素2000ETF',kind:'etf'},
+ {sym:'usSOXX',code:'SOXX',name:'费城半导体ETF-iShares',kind:'etf'},{sym:'usSMH',code:'SMH',name:'半导体ETF-VanEck',kind:'etf'},
+ {sym:'usSOXL',code:'SOXL',name:'半导体3倍做多 Direxion',kind:'lev'},{sym:'usSOXS',code:'SOXS',name:'半导体3倍做空 Direxion',kind:'lev'},
+ {sym:'usTQQQ',code:'TQQQ',name:'纳指100三倍做多',kind:'lev'},{sym:'usSQQQ',code:'SQQQ',name:'纳指100三倍做空',kind:'lev'},
+ {sym:'usARKK',code:'ARKK',name:'ARK创新ETF',kind:'etf'},
+ {sym:'usGLD',code:'GLD',name:'SPDR黄金ETF',kind:'gold'},{sym:'usSLV',code:'SLV',name:'iShares白银ETF',kind:'silver'},{sym:'usUSO',code:'USO',name:'美国原油基金',kind:'oil'},
+ {sym:'usTLT',code:'TLT',name:'20年+美债ETF',kind:'bond'},{sym:'usIEF',code:'IEF',name:'7-10年美债ETF',kind:'bond'},{sym:'usSHY',code:'SHY',name:'1-3年美债ETF',kind:'bond'},
+ {sym:'usHYG',code:'HYG',name:'高收益债ETF',kind:'bond'},{sym:'usLQD',code:'LQD',name:'投资级公司债ETF',kind:'bond'},{sym:'usAGG',code:'AGG',name:'综合债券ETF',kind:'bond'},
+ {sym:'usEEM',code:'EEM',name:'新兴市场ETF',kind:'etf'},{sym:'usFXI',code:'FXI',name:'中国大盘ETF',kind:'etf'},{sym:'usKWEB',code:'KWEB',name:'中概互联ETF',kind:'etf'},{sym:'usMCHI',code:'MCHI',name:'MSCI中国ETF',kind:'etf'},
+ {sym:'usYINN',code:'YINN',name:'富时中国3倍做多',kind:'lev'},{sym:'usYANG',code:'YANG',name:'富时中国3倍做空',kind:'lev'},
+ {sym:'usIBIT',code:'IBIT',name:'iShares比特币ETF',kind:'crypto'},{sym:'usFBTC',code:'FBTC',name:'富达比特币ETF',kind:'crypto'},{sym:'usETHA',code:'ETHA',name:'iShares以太坊ETF',kind:'crypto'}],
+hk:[
+ {sym:'hkHSI',code:'HSI',name:'恒生指数',kind:'idx'},{sym:'hkHSCEI',code:'HSCEI',name:'恒生中国企业指数',kind:'idx'},{sym:'hkHSTECH',code:'HSTECH',name:'恒生科技指数',kind:'idx'},
+ {sym:'hk02800',code:'02800',name:'盈富基金',kind:'etf'},{sym:'hk02828',code:'02828',name:'恒生中国企业ETF',kind:'etf'},{sym:'hk03033',code:'03033',name:'南方恒生科技ETF',kind:'etf'},
+ {sym:'hk03067',code:'03067',name:'安硕恒生科技ETF',kind:'etf'},{sym:'hk02822',code:'02822',name:'南方富时中国A50ETF',kind:'etf'},{sym:'hk03188',code:'03188',name:'华夏沪深300ETF',kind:'etf'},
+ {sym:'hk02840',code:'02840',name:'SPDR金ETF',kind:'gold'},{sym:'hk03110',code:'03110',name:'恒生高股息ETF',kind:'etf'}],
+cn:[
+ {sym:'sh000001',code:'000001',name:'上证指数',kind:'idx'},{sym:'sh000300',code:'000300',name:'沪深300指数',kind:'idx'},{sym:'sh000905',code:'000905',name:'中证500指数',kind:'idx'},
+ {sym:'sh000688',code:'000688',name:'科创50指数',kind:'idx'},{sym:'sz399001',code:'399001',name:'深证成指',kind:'idx'},{sym:'sz399006',code:'399006',name:'创业板指',kind:'idx'},
+ {sym:'sh588000',code:'588000',name:'科创50ETF华夏',kind:'etf'},{sym:'sh510300',code:'510300',name:'沪深300ETF',kind:'etf'},{sym:'sh510500',code:'510500',name:'中证500ETF',kind:'etf'},
+ {sym:'sz159915',code:'159915',name:'创业板ETF',kind:'etf'},{sym:'sh512480',code:'512480',name:'半导体ETF',kind:'etf'},{sym:'sh512760',code:'512760',name:'芯片ETF',kind:'etf'},
+ {sym:'sh513100',code:'513100',name:'纳指ETF',kind:'etf'},{sym:'sh518880',code:'518880',name:'黄金ETF',kind:'gold'},{sym:'sh511010',code:'511010',name:'国债ETF',kind:'bond'},{sym:'sh511260',code:'511260',name:'十年国债ETF',kind:'bond'}]
+};
+
+/* ============ 个股清单：内置兜底 + 启动后拉取成交额前1000 ============ */
+let RANKS={us:[],hk:[],cn:[]};
+const US_FALLBACK=["AAPL|Apple","MSFT|Microsoft","NVDA|NVIDIA","GOOGL|Alphabet","AMZN|Amazon","META|Meta","TSLA|Tesla","AVGO|Broadcom","LLY|Eli Lilly","JPM|JPMorgan","V|Visa","XOM|Exxon","MA|Mastercard","ORCL|Oracle","COST|Costco","NFLX|Netflix","BAC|BofA","CRM|Salesforce","AMD|AMD","KO|Coca-Cola","WMT|Walmart","ADBE|Adobe","QCOM|Qualcomm","INTC|Intel","PLTR|Palantir","COIN|Coinbase","MSTR|MicroStrategy","BABA|Alibaba ADR","PDD|PDD","TSM|TSMC","MU|美光科技","MRVL|迈威尔科技"].map(s=>{const[c,n]=s.split('|');return{sym:'us'+c,code:c,name:n};});
+const HK_FALLBACK=["09988|阿里巴巴-W","00700|腾讯控股","00981|中芯国际","01299|友邦保险","00388|香港交易所","09992|泡泡玛特","00883|中国海洋石油","00992|联想集团","02899|紫金矿业","01810|小米集团-W","03750|宁德时代","03690|美团-W","00005|汇丰控股","01024|快手-W","09999|网易-S","00939|建设银行","01211|比亚迪股份","01398|工商银行","00175|吉利汽车","02318|中国平安","09618|京东集团-SW","09868|小鹏汽车-W","00941|中国移动","09888|百度集团-SW","03988|中国银行","02015|理想汽车-W","00857|中国石油股份","03968|招商银行","02628|中国人寿"].map(s=>{const[c,n]=s.split('|');return{sym:'hk'+c,code:c,name:n};});
+const CN_FALLBACK=["sz300502|新易盛","sz300308|中际旭创","sh600487|亨通光电","sz000725|京东方A","sh600522|中天科技","sh603986|兆易创新","sz002384|东山精密","sh688256|寒武纪","sh688041|海光信息","sh601138|工业富联","sz300750|宁德时代","sz002463|沪电股份","sh688008|澜起科技","sh600519|贵州茅台"].map(s=>{const[c,n]=s.split('|');return{sym:c,code:c.slice(2),name:n};});
+
+/* ================= 工具 ================= */
+function jsonp(src,charset){return new Promise((res,rej)=>{const s=document.createElement('script');if(charset)s.charset=charset;s.src=src;s.onload=()=>{s.remove();res();};s.onerror=()=>{s.remove();rej(new Error('fail'));};document.head.appendChild(s);});}
+function toUSD(v,c){if(c==='USD')return v;if(c==='CNY')return v/fx.USDCNY;if(c==='HKD')return v/fx.USDHKD;return v;}
+function fromUSD(v,c){if(c==='USD')return v;if(c==='CNY')return v*fx.USDCNY;if(c==='HKD')return v*fx.USDHKD;return v;}
+function inBase(v,c){return fromUSD(toUSD(v,c),baseCcy);}
+const CSYM={USD:'$',CNY:'¥',HKD:'HK$'};
+function fmt(v,c){if(v==null||isNaN(v))return'--';return(CSYM[c||baseCcy]||'')+Math.round(v).toLocaleString('en-US');}
+function fmt2(v){return v==null||isNaN(v)?'--':(+v).toLocaleString('en-US',{maximumFractionDigits:2});}
+function esc(s){return String(s).replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));}
+
+/* ====== 成交额前1000清单（东方财富，分页拉取，缓存24小时） ====== */
+function emPage(market,pn){
+  return new Promise(resolve=>{
+    const cb='__em'+market+pn+(Date.now()%1e4);
+    window[cb]=d=>{delete window[cb];resolve(d);};
+    const fs=market==='cn'?'m:0+t:6,m:0+t:80,m:1+t:2,m:1+t:23':market==='hk'?'m:128+t:3,m:128+t:4':'m:105,m:106,m:107';
+    const fields=market==='cn'?'f12,f13,f14':'f12,f14';
+    jsonp(`https://push2.eastmoney.com/api/qt/clist/get?cb=${cb}&pn=${pn}&pz=200&po=1&np=1&fltt=2&invt=2&fid=f6&fs=${fs}&fields=${fields}`).catch(()=>{delete window[cb];resolve(null);});
+    setTimeout(()=>{if(window[cb]){delete window[cb];resolve(null);}},8000);
+  });
+}
+function rowToItem(market,r){
+  if(market==='cn')return{sym:(r.f13===1?'sh':'sz')+r.f12,code:r.f12,name:r.f14};
+  if(market==='hk')return{sym:'hk'+r.f12,code:r.f12,name:r.f14};
+  if(/[._]/.test(r.f12))return null; // 跳过含点/下划线的美股代码（腾讯变量名不兼容）
+  return{sym:'us'+r.f12,code:r.f12,name:r.f14};
+}
+async function refreshRankLists(){
+  try{const c=JSON.parse(localStorage.getItem(LS.RANKS)||'null');
+    if(c&&Date.now()-c.t<24*3600*1000&&c.us&&c.us.length>200){RANKS=c;return;}}catch(_){}
+  for(const market of['cn','hk','us']){
+    const seen=new Set(),list=[];
+    for(let pn=1;pn<=5;pn++){
+      const d=await emPage(market,pn);
+      if(!d||!d.data||!d.data.diff)break;
+      d.data.diff.forEach(r=>{const it=rowToItem(market,r);if(it&&!seen.has(it.sym)){seen.add(it.sym);list.push(it);}});
+      if(list.length>=1000)break;
+    }
+    if(list.length)RANKS[market]=list.slice(0,1000);
+  }
+  RANKS.t=Date.now();
+  try{localStorage.setItem(LS.RANKS,JSON.stringify({t:Date.now(),us:RANKS.us,hk:RANKS.hk,cn:RANKS.cn}));}catch(_){}
+}
+function marketList(mk){
+  if(mk==='cg')return CG_LIST;
+  const rank=RANKS[mk]&&RANKS[mk].length?RANKS[mk]:(mk==='us'?US_FALLBACK:mk==='hk'?HK_FALLBACK:CN_FALLBACK);
+  const cur=IDX_ETF[mk]||[];
+  const curSyms=new Set(cur.map(x=>x.sym));
+  return[...cur,...rank.filter(x=>!curSyms.has(x.sym))];
+}
+
+/* ====== 行情 ====== */
+function parseQuote(sym,raw){
+  if(!raw)return null;
+  if(sym.startsWith('hf_')){const a=raw.split(',');return{name:a[13]||sym,price:+a[0],pct:+a[1],change:null,ccy:'USD'};}
+  const a=raw.split('~');
+  if(sym.startsWith('wh'))return{price:+a[3]};
+  const ccy=sym.startsWith('us')?'USD':sym.startsWith('hk')?'HKD':'CNY';
+  return{name:a[1],price:+a[3],change:+a[31],pct:+a[32],ccy};
+}
+async function fetchQuotes(){
+  const syms=[...new Set(holdings.filter(h=>h.sym&&!h.sym.startsWith('cg_')).map(h=>h.sym))];
+  const all=[...syms,...INDEXES,'whUSDCNY','whUSDHKD'];
+  try{
+    await jsonp('https://qt.gtimg.cn/q='+all.join(',')+'&_='+Date.now(),'GBK');
+    all.forEach(sym=>{
+      const raw=window['v_'+sym];if(raw===undefined)return;
+      const q=parseQuote(sym,raw);if(!q)return;
+      if(sym==='whUSDCNY'){if(q.price>0)fx.USDCNY=q.price;}
+      else if(sym==='whUSDHKD'){if(q.price>0)fx.USDHKD=q.price;}
+      else quotes[sym]=q;
+    });
+    lastUpd.textContent='更新于 '+new Date().toLocaleTimeString();
+  }catch(e){lastUpd.textContent='股票行情获取失败';}
+  await fetchCrypto();
+}
+async function fetchCrypto(){
+  const ids=[...new Set(holdings.filter(h=>h.sym&&h.sym.startsWith('cg_')).map(h=>h.sym.slice(3)))];
+  if(!ids.length)return;
+  try{
+    const r=await fetch('https://api.coingecko.com/api/v3/simple/price?ids='+ids.join(',')+'&vs_currencies=usd&include_24hr_change=true');
+    const j=await r.json();
+    ids.forEach(id=>{const d=j[id];if(!d)return;
+      const code=(Object.entries(CG_MAP).find(([,v])=>v===id)||[id])[0];
+      quotes['cg_'+id]={name:code,price:d.usd,pct:d.usd_24h_change,change:d.usd*d.usd_24h_change/(100+d.usd_24h_change),ccy:'USD'};});
+  }catch(e){}
+}
+
+/* ================= 估值 ================= */
+function valueOf(h){
+  if(h.sym){
+    const q=quotes[h.sym];
+    const price=q?q.price:null,ccy=q?q.ccy:'USD';
+    const val=price!=null?inBase(price*h.qty,ccy):0;
+    const day=(q&&q.change!=null)?inBase(q.change*h.qty,ccy):(q&&q.pct!=null&&q.price)?inBase(q.price*h.qty*q.pct/(100+q.pct),ccy):0;
+    const cost=h.cost?inBase(h.cost*h.qty,ccy):null;
+    return{val,day,cost,price,pct:q?q.pct:null,ccy,liveName:q?q.name:null};
+  }
+  return{val:inBase(h.val,h.ccy),day:0,cost:h.costM?inBase(h.costM,h.ccy):null,price:null,pct:null,ccy:h.ccy};
+}
+function goalCash(g){return(g.ledger||[]).reduce((s,e)=>s+inBase(e.amt,e.ccy||baseCcy),0);}
+function goalHoldingsVal(g){return holdings.filter(h=>h.account===g.id).map(valueOf).reduce((s,r)=>s+r.val,0);}
+function goalBalance(g){return goalCash(g)+goalHoldingsVal(g);}
+function polCVTotal(){return policies.reduce((s,p)=>s+(p.cv?inBase(p.cv,p.cvCcy):0),0);}
+function acctName(id){if(id==='main')return'主组合';const g=goals.find(x=>x.id===id);return g?GOAL_TYPES[g.type].icon+g.name:'主组合';}
+
+/* ================= 资产分类（用于收益/风险假设） ================= */
+function cls(h){
+  if(h.cat==='cash')return{g:'cash',ccy:h.ccy};
+  if(h.cat==='bond')return{g:'bond',coupon:h.coupon};
+  if(h.cat==='realestate')return{g:'re'};
+  if(h.cat==='pe')return{g:'pe'};
+  if(h.cat==='other')return{g:'other'};
+  if(h.cat==='commodity')return{g:h.sym==='hf_SI'?'silver':h.sym==='hf_CL'?'oil':'gold'};
+  if(h.kind&&['bond','gold','silver','oil','crypto','lev'].includes(h.kind))return{g:h.kind};
+  if(h.sym&&h.sym.startsWith('cg_'))return{g:'crypto'};
+  const mkt=h.sym?(h.sym.startsWith('us')?'us':h.sym.startsWith('hk')?'hk':'cn'):'us';
+  return{g:h.kind==='idx'?'idx':'eq',mkt};
+}
+const RET_A={eq:{us:6.5,hk:7,cn:7.5},idx:{us:6.5,hk:7,cn:7.5},lev:0,crypto:0,gold:3,silver:3,oil:2,bond:3.5,re:4,pe:10,other:0,cash:{USD:4,HKD:3.5,CNY:1.8}};
+const VOL_A={eq:{us:22,hk:25,cn:28},idx:{us:16,hk:20,cn:22},lev:60,crypto:65,gold:15,silver:28,oil:35,bond:6,re:10,pe:20,other:5,cash:0.3};
+const DIV_A={eq:{us:1.3,hk:3.5,cn:2.5},idx:{us:1.3,hk:3.5,cn:2.5},re:2};
+function expRetOf(c){
+  if(c.g==='cash')return RET_A.cash[c.ccy]??2;
+  if(c.g==='bond')return c.coupon||RET_A.bond;
+  if(c.g==='eq'||c.g==='idx')return RET_A[c.g][c.mkt]??6.5;
+  return RET_A[c.g]??0;
+}
+function volOf(c){
+  if(c.g==='cash')return VOL_A.cash;
+  if(c.g==='eq'||c.g==='idx')return VOL_A[c.g][c.mkt]??22;
+  return VOL_A[c.g]??10;
+}
+function divOf(c){
+  if(c.g==='cash')return RET_A.cash[c.ccy]??2;
+  if(c.g==='bond')return c.coupon||RET_A.bond;
+  if(c.g==='eq'||c.g==='idx')return DIV_A[c.g][c.mkt]??1.5;
+  if(c.g==='re')return DIV_A.re;
+  return 0;
+}
+function defRho(A,B){
+  const eqlike=x=>x.g==='eq'||x.g==='idx'||x.g==='lev';
+  if(A.g==='cash'||B.g==='cash')return 0;
+  if(eqlike(A)&&eqlike(B))return(A.mkt&&A.mkt===B.mkt)?0.8:0.6;
+  const other=eqlike(A)?B.g:eqlike(B)?A.g:null;
+  if(other!=null)return{crypto:.4,gold:.05,silver:.15,oil:.3,bond:.1,re:.3,pe:.7,other:.1}[other]??.2;
+  const pair=(x,y)=>(A.g===x&&B.g===y)||(A.g===y&&B.g===x);
+  if(pair('gold','silver'))return .8;
+  if(pair('gold','crypto'))return .1;
+  if(pair('re','pe'))return .3;
+  if(A.g==='bond'||B.g==='bond')return .1;
+  return .2;
+}
+
+/* ================= 渲染 ================= */
+let chLine=null,chDonut=null,goalCharts={};
+function render(){
+  const rows=holdings.map(h=>({h,...valueOf(h)}));
+  const gCash=goals.reduce((s,g)=>s+goalCash(g),0);
+  const polCV=polCVTotal();
+  const total=rows.reduce((s,r)=>s+r.val,0)+gCash+polCV;
+  const day=rows.reduce((s,r)=>s+r.day,0);
+  const cash=rows.filter(r=>r.h.cat==='cash').reduce((s,r)=>s+r.val,0)+gCash;
+  const pct=total-day>0?day/(total-day)*100:0;
+
+  kNW.textContent=fmt(total);kNWs.textContent='基准货币 '+baseCcy;
+  kDay.textContent=(day>=0?'+':'')+fmt(day);kDay.className='v '+(day>=0?'up':'down');
+  kDays.textContent=(pct>=0?'+':'')+pct.toFixed(2)+'%';kDays.className='s '+(day>=0?'up':'down');
+  kCash.textContent=fmt(cash);kCashs.textContent=total>0?(cash/total*100).toFixed(1)+'% of net worth':'';
+  kCnt.textContent=holdings.length;
+  sbNW.textContent=fmt(total);
+  sbChg.textContent=(day>=0?'▲ +':'▼ ')+fmt(day)+' 今日';sbChg.className='nw-chg '+(day>=0?'up':'down');
+  thVal.textContent='市值('+baseCcy+')';
+
+  let sb='';
+  for(const[k,c]of Object.entries(CATS)){
+    const list=rows.filter(r=>r.h.cat===k);
+    let sub=list.reduce((s,r)=>s+r.val,0);
+    let extra='';
+    if(k==='cash'&&gCash>0){sub+=gCash;extra=goals.filter(g=>goalCash(g)!==0).map(g=>`<div class="cat-row" onclick="showTab('plan')"><span>${GOAL_TYPES[g.type].icon} ${esc(g.name)}·现金</span><span>${fmt(goalCash(g))}</span></div>`).join('');}
+    if(k==='other'&&polCV>0){sub+=polCV;extra+=`<div class="cat-row" onclick="showTab('more')"><span>🛡️ 保单现金价值</span><span>${fmt(polCV)}</span></div>`;}
+    sb+=`<div class="cat-block"><div class="cat-head"><b><span class="swatch" style="background:${c.color}"></span>${c.label.toUpperCase()}</b><button class="cat-add" onclick="openAdd('${k}')">＋</button></div>`;
+    list.forEach(r=>{sb+=`<div class="cat-row" onclick="editItem('${r.h.id}')"><span>${esc(r.liveName||r.h.name)}</span><span>${fmt(r.val)}</span></div>`;});
+    sb+=extra;
+    sb+=(list.length||extra)?`<div class="cat-sub">${fmt(sub)}</div>`:'';
+    sb+=`</div>`;
+  }
+  sbCats.innerHTML=sb;
+
+  let tb='';
+  rows.sort((a,b)=>b.val-a.val).forEach(r=>{
+    const h=r.h,c=CATS[h.cat];
+    const pl=r.cost!=null?r.val-r.cost:null;
+    tb+=`<tr>
+      <td><div class="nm">${esc(r.liveName||h.name)}</div><div class="cd">${h.sym||h.ccy||''}${h.kind==='lev'?' ⚡杠杆':h.kind==='idx'?' 📊指数':''}</div></td>
+      <td><span class="tag" style="background:${c.color}">${c.label.split(' ')[0]}</span></td>
+      <td><span class="tag ghost">${esc(acctName(h.account))}</span></td>
+      <td>${h.qty?fmt2(h.qty):'--'}</td>
+      <td>${r.price!=null?CSYM[r.ccy]+fmt2(r.price):'--'}</td>
+      <td class="${r.pct>=0?'up':'down'}">${r.pct!=null?(r.pct>=0?'+':'')+(+r.pct).toFixed(2)+'%':'--'}</td>
+      <td><b>${fmt(r.val)}</b></td>
+      <td class="${pl>=0?'up':'down'}">${pl!=null?(pl>=0?'+':'')+fmt(pl):'--'}</td>
+      <td><button class="act" onclick="editItem('${h.id}')">编辑</button><button class="act" onclick="delItem('${h.id}')">删除</button></td>
+    </tr>`;
+  });
+  tbody.innerHTML=tb;
+  emptyHint.style.display=holdings.length?'none':'block';
+
+  drawCharts(rows,total,gCash,polCV);
+  saveHistory(total);
+  renderPulseDaily(rows,total,day,pct);
+  renderGoals();
+  renderStats(rows,total,cash);
+  renderImprove(rows,total,cash);
+  renderInsurance(cash);
+}
+function drawCharts(rows,total,gCash,polCV){
+  const labels=[],data=[],colors=[];
+  for(const[k,c]of Object.entries(CATS)){
+    let v=rows.filter(r=>r.h.cat===k).reduce((s,r)=>s+r.val,0);
+    if(k==='cash')v+=gCash;
+    if(k==='other')v+=polCV;
+    if(v>0){labels.push(c.label.split(' ')[0]);data.push(+v.toFixed(0));colors.push(c.color);}
+  }
+  if(chDonut)chDonut.destroy();
+  chDonut=new Chart(document.getElementById('chDonut'),{type:'doughnut',
+    data:{labels,datasets:[{data,backgroundColor:colors,borderWidth:2,borderColor:'#fff'}]},
+    options:{maintainAspectRatio:false,cutout:'62%',plugins:{legend:{position:'right',labels:{boxWidth:10,font:{size:11},
+      generateLabels(c){const t=c.data.datasets[0].data.reduce((a,b)=>a+b,0)||1;return c.data.labels.map((l,i)=>({text:`${l} ${(c.data.datasets[0].data[i]/t*100).toFixed(1)}%`,fillStyle:c.data.datasets[0].backgroundColor[i],lineWidth:0}));}}}}}});
+  const hist=JSON.parse(localStorage.getItem(LS.HIST)||'{}');
+  const ds=Object.keys(hist).sort().slice(-60);
+  if(chLine)chLine.destroy();
+  chLine=new Chart(document.getElementById('chLine'),{type:'line',
+    data:{labels:ds.map(d=>d.slice(5)),datasets:[{data:ds.map(d=>fromUSD(hist[d],baseCcy)),borderColor:'#1f5eff',backgroundColor:'rgba(31,94,255,.08)',fill:true,tension:.3,pointRadius:ds.length>20?0:3}]},
+    options:{maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{ticks:{callback:v=>fmt(v)}}}}});
+}
+function saveHistory(totalBase){
+  if(!holdings.length&&!goals.length&&!policies.length)return;
+  const hist=JSON.parse(localStorage.getItem(LS.HIST)||'{}');
+  hist[new Date().toISOString().slice(0,10)]=Math.round(toUSD(totalBase,baseCcy));
+  localStorage.setItem(LS.HIST,JSON.stringify(hist));
+}
+
+/* ================= Portfolio Stats ================= */
+function renderStats(rows,total,cash){
+  if(!total){['stTotal','stCash','stRet','stRisk','stDiv'].forEach(id=>window[id].textContent='--');return;}
+  stTotal.textContent=fmt(total);
+  stCash.textContent=fmt(cash);
+  stCashS.textContent=(cash/total*100).toFixed(1)+'% of total';
+  // 权重项：持仓 + 目标现金 + 保单现金价值（按现金/债类处理）
+  const items=rows.filter(r=>r.val>0).map(r=>({w:r.val/total,c:cls(r.h),sym:r.h.sym}));
+  const gCash=goals.reduce((s,g)=>s+goalCash(g),0);
+  if(gCash>0)items.push({w:gCash/total,c:{g:'cash',ccy:baseCcy}});
+  const pcv=polCVTotal();
+  if(pcv>0)items.push({w:pcv/total,c:{g:'bond'}}); // 储蓄型保单近似为债类
+  // 预期收益 & 股息
+  let ret=0,div=0;
+  items.forEach(it=>{ret+=it.w*expRetOf(it.c);div+=it.w*divOf(it.c);});
+  stRet.textContent=ret.toFixed(2)+'%/yr';
+  stRetS.textContent='≈ '+fmt(total*ret/100)+' / 年';
+  stDiv.textContent=fmt(total*div/100)+'/yr';
+  // 预期风险：实测优先
+  const cc=getCorrCache();
+  const symIdx={};if(cc&&cc.syms)cc.syms.forEach((s,i)=>symIdx[s]=i);
+  let varp=0;
+  for(let i=0;i<items.length;i++)for(let j=0;j<items.length;j++){
+    const a=items[i],b=items[j];
+    let va=volOf(a.c),vb=volOf(b.c),rho;
+    if(i===j)rho=1;
+    else if(cc&&a.sym&&b.sym&&symIdx[a.sym]!=null&&symIdx[b.sym]!=null&&cc.matrix[symIdx[a.sym]][symIdx[b.sym]]!=null)rho=cc.matrix[symIdx[a.sym]][symIdx[b.sym]];
+    else rho=defRho(a.c,b.c);
+    if(cc&&a.sym&&symIdx[a.sym]!=null&&cc.vols[symIdx[a.sym]])va=cc.vols[symIdx[a.sym]];
+    if(cc&&b.sym&&symIdx[b.sym]!=null&&cc.vols[symIdx[b.sym]])vb=cc.vols[symIdx[b.sym]];
+    varp+=a.w*b.w*va*vb*rho;
+  }
+  const sigma=Math.sqrt(Math.max(0,varp));
+  stRisk.textContent=sigma.toFixed(1)+'%';
+  stRiskS.textContent='正常年份波动约 ±'+fmt(total*sigma/100);
+}
+
+/* ================= Pulse ================= */
+function idxLine(){
+  const m={sh000001:'上证指数',hkHSI:'恒生指数',usDJI:'道琼斯',usIXIC:'纳斯达克'};
+  return INDEXES.map(s=>{const q=quotes[s];if(!q||!q.price)return null;
+    return`${m[s]} ${fmt2(q.price)}（${q.pct>=0?'+':''}${(+q.pct).toFixed(2)}%）`;}).filter(Boolean).join('；');
+}
+function renderPulseDaily(rows,total,day,pct){
+  const idx=idxLine();
+  let movers='';
+  const sorted=rows.filter(r=>r.pct!=null).sort((a,b)=>Math.abs(b.day)-Math.abs(a.day));
+  if(sorted.length){const t=sorted[0];movers=`组合中影响最大的是 ${esc(t.liveName||t.h.name)}（${t.pct>=0?'+':''}${(+t.pct).toFixed(2)}%，贡献 ${t.day>=0?'+':''}${fmt(t.day)}）。`;}
+  pulseDaily.innerHTML=`${idx?idx+'。<br>':''}你的组合今日 <b class="${day>=0?'up':'down'}">${day>=0?'+':''}${fmt(day)}（${pct>=0?'+':''}${pct.toFixed(2)}%）</b>。${movers}`;
+  const g=quotes['hf_GC'],o=quotes['hf_CL'];
+  pulseMacro.innerHTML=[
+    `美元/人民币 <b>${fmt2(fx.USDCNY)}</b>，美元/港元 <b>${fmt2(fx.USDHKD)}</b>`,
+    g?`COMEX 黄金 <b>$${fmt2(g.price)}</b>（${g.pct>=0?'+':''}${(+g.pct).toFixed(2)}%）`:null,
+    o?`WTI 原油 <b>$${fmt2(o.price)}</b>（${o.pct>=0?'+':''}${(+o.pct).toFixed(2)}%）`:null,
+    `关注：美联储议息、中国 LPR、非农与 CPI 数据窗口`
+  ].filter(Boolean).join('；')+'。';
+}
+const NEWS_TTL=30*60*1000;
+async function getNews(q,zh){
+  const key='wd_news_'+q;
+  try{const c=JSON.parse(localStorage.getItem(key)||'null');if(c&&Date.now()-c.t<NEWS_TTL)return c.items;}catch(_){}
+  const feed='https://news.google.com/rss/search?q='+encodeURIComponent(q)+(zh?'&hl=zh-HK&gl=HK&ceid=HK:zh-Hant':'&hl=en-US&gl=US&ceid=US:en');
+  try{
+    const r=await fetch('https://api.rss2json.com/v1/api.json?rss_url='+encodeURIComponent(feed));
+    const j=await r.json();
+    if(j.status!=='ok')return null;
+    const items=(j.items||[]).slice(0,3).map(i=>{
+      const parts=i.title.split(' - ');const src=parts.length>1?parts.pop():'';
+      return{title:parts.join(' - '),src,link:i.link,date:(i.pubDate||'').slice(5,10)};});
+    localStorage.setItem(key,JSON.stringify({t:Date.now(),items}));
+    return items;
+  }catch(e){return null;}
+}
+function newsHTML(items){
+  if(!items||!items.length)return'<span class="muted">暂时无法获取新闻（点击刷新重试）</span>';
+  return items.map(i=>`<div class="newsitem"><a href="${esc(i.link)}" target="_blank">${esc(i.title)}</a><div class="src">${esc(i.src)} · ${esc(i.date)}</div></div>`).join('');
+}
+function myTopics(){
+  const topics=[];const rows=holdings.map(h=>({h,...valueOf(h)}));
+  const has=f=>rows.some(f);
+  if(has(r=>(r.h.sym&&r.h.sym.startsWith('cg_'))||r.h.kind==='crypto'))topics.push({q:'bitcoin crypto market',label:'加密货币',zh:false});
+  if(has(r=>r.h.sym==='hf_GC'||r.h.kind==='gold'||/黄金|gold/i.test(r.h.name)))topics.push({q:'gold price',label:'黄金',zh:false});
+  if(has(r=>r.h.sym==='hf_CL'||r.h.kind==='oil'))topics.push({q:'oil price OPEC',label:'原油',zh:false});
+  if(has(r=>['usSOXX','usSOXL','usSOXS','usSMH','sh512480','sh512760'].includes(r.h.sym)))topics.push({q:'semiconductor stocks',label:'半导体',zh:false});
+  rows.filter(r=>r.h.sym&&/^(us|hk|sh|sz)/.test(r.h.sym)&&!r.h.kind).sort((a,b)=>b.val-a.val).slice(0,3).forEach(r=>{
+    const nm=r.liveName||r.h.name;
+    topics.push({q:nm+' 股票',label:nm,zh:!r.h.sym.startsWith('us')});
+  });
+  return topics.slice(0,4);
+}
+async function renderNews(){
+  getNews('stock market today',false).then(it=>{pulseGeneral.innerHTML=newsHTML(it);});
+  const topics=myTopics();
+  if(!topics.length){pulseMine.innerHTML='<span class="muted">添加持仓后自动生成。</span>';return;}
+  pulseMine.innerHTML='加载中…';
+  let html='';
+  for(const t of topics){
+    let items=await getNews(t.q,t.zh);
+    if((!items||!items.length)&&t.zh)items=await getNews(t.q.replace(' 股票',' stock'),false);
+    html+=`<div style="margin-bottom:8px"><span class="topic-tag">${esc(t.label)}</span>${newsHTML(items?items.slice(0,2):null)}</div>`;
+    pulseMine.innerHTML=html;
+  }
+}
+
+/* ================= Plan：目标 ================= */
+function persistG(){localStorage.setItem(LS.G,JSON.stringify(goals));}
+function openGoalModal(type,id){
+  gNewType=type;gEditId=id||null;
+  const t=GOAL_TYPES[type];
+  gTitle.textContent=(id?'编辑：':'新建：')+t.icon+' '+t.label;
+  gRetireFields.style.display=type==='retire'?'block':'none';
+  gDelete.style.display=id?'inline-block':'none';
+  const g=id?goals.find(x=>x.id===id):null;
+  gName.value=g?g.name:t.defName;
+  gTarget.value=g?g.target:(type==='edu'?1500000:type==='home'?800000:type==='retire'?5000000:100000);
+  gYear.value=g?g.year:new Date().getFullYear()+(type==='edu'?15:type==='home'?5:type==='retire'?25:5);
+  gRet.value=g?g.ret:5;gMonthly.value=g?g.monthly:0;
+  gAgeNow.value=g&&g.ageNow||35;gAgeRet.value=g&&g.ageRet||60;gSpend.value=g&&g.spend||20000;gPension.value=g&&g.pension||5000;
+  gOverlay.classList.add('show');
+}
+function saveGoal(){
+  const g={id:gEditId||('g'+Date.now()),type:gNewType,name:gName.value.trim()||'目标',target:+gTarget.value||0,year:+gYear.value||new Date().getFullYear()+5,ret:+gRet.value||0,monthly:+gMonthly.value||0,ledger:(gEditId?(goals.find(x=>x.id===gEditId)||{}).ledger:[])||[]};
+  if(gNewType==='retire'){g.ageNow=+gAgeNow.value;g.ageRet=+gAgeRet.value;g.spend=+gSpend.value;g.pension=+gPension.value;g.year=new Date().getFullYear()+(g.ageRet-g.ageNow);}
+  if(gEditId)goals=goals.map(x=>x.id===gEditId?g:x);else goals.push(g);
+  persistG();gOverlay.classList.remove('show');render();
+}
+function delGoal(){
+  if(!gEditId)return;
+  if(!confirm('删除目标？其名下资产将归入主组合。'))return;
+  holdings.forEach(h=>{if(h.account===gEditId)h.account='main';});
+  goals=goals.filter(x=>x.id!==gEditId);
+  persist();persistG();gOverlay.classList.remove('show');render();
+}
+function addLedger(gid){
+  const g=goals.find(x=>x.id===gid);if(!g)return;
+  const d=document.getElementById('ld_'+gid),f=document.getElementById('lf_'+gid),a=document.getElementById('la_'+gid),c=document.getElementById('lc_'+gid),n=document.getElementById('ln_'+gid);
+  if(!+a.value)return alert('请输入金额（支出/转投资用负数）');
+  g.ledger.push({date:d.value||new Date().toISOString().slice(0,10),from:f.value.trim(),amt:+a.value,ccy:c.value,note:n.value.trim()});
+  persistG();render();
+}
+function delLedger(gid,i){const g=goals.find(x=>x.id===gid);if(!g)return;g.ledger.splice(i,1);persistG();render();}
+function goalProjection(g){
+  const now=new Date().getFullYear();
+  const r=(g.ret||0)/100/12;
+  if(g.type==='retire'){
+    const yearsAcc=Math.max(0,(g.ageRet-g.ageNow)),yearsDraw=Math.max(0,90-g.ageRet);
+    let bal=goalBalance(g);const pts=[{x:now,y:bal}];
+    for(let y=1;y<=yearsAcc;y++){for(let m=0;m<12;m++)bal=bal*(1+r)+(g.monthly||0);pts.push({x:now+y,y:bal});}
+    const netSpend=Math.max(0,(g.spend||0)-(g.pension||0));
+    for(let y=1;y<=yearsDraw;y++){for(let m=0;m<12;m++)bal=bal*(1+r)-netSpend;pts.push({x:now+yearsAcc+y,y:Math.max(0,bal)});if(bal<=0)break;}
+    return{pts,end:bal,horizon:'至 90 岁'};
+  }
+  const years=Math.max(0,g.year-now);
+  let bal=goalBalance(g);const pts=[{x:now,y:bal}];
+  for(let y=1;y<=years;y++){for(let m=0;m<12;m++)bal=bal*(1+r)+(g.monthly||0);pts.push({x:now+y,y:bal});}
+  return{pts,end:bal,horizon:g.year+'年'};
+}
+function requiredMonthly(g){
+  const now=new Date().getFullYear(),months=Math.max(1,(g.year-now)*12),r=(g.ret||0)/100/12;
+  const bal=goalBalance(g);
+  const fvBal=bal*Math.pow(1+r,months);
+  const need=(g.target-fvBal);
+  if(need<=0)return 0;
+  const annuity=r>0?(Math.pow(1+r,months)-1)/r:months;
+  return need/annuity;
+}
+function renderGoals(){
+  Object.values(goalCharts).forEach(c=>c.destroy());goalCharts={};
+  if(!goals.length){goalList.innerHTML='<div class="card muted" style="text-align:center;padding:30px">还没有目标。从上面选择一个开始 —— 比如给孩子建一个「教育基金」，红包一笔笔记进去，这就是他将来读书的钱。</div>';return;}
+  goalList.innerHTML=goals.map(g=>{
+    const t=GOAL_TYPES[g.type],bal=goalBalance(g),cash=goalCash(g),hv=goalHoldingsVal(g);
+    const prog=g.target>0?Math.min(100,bal/g.target*100):0;
+    const proj=goalProjection(g),reqM=requiredMonthly(g);
+    const hlist=holdings.filter(h=>h.account===g.id);
+    const onTrack=g.type==='retire'?proj.end>0:proj.end>=g.target;
+    return`<div class="card goal-card">
+      <div class="ghead"><div><h3>${t.icon} ${esc(g.name)} <span class="tag ghost">${t.label}</span></h3>
+      <div class="muted" style="margin-top:4px">目标 ${fmt(g.target)} · ${g.type==='retire'?`${g.ageRet}岁退休，推演${proj.horizon}`:`${g.year}年到期`} · 预期年化 ${g.ret}%</div></div>
+      <div><button class="btn sm" onclick="openGoalModal('${g.type}','${g.id}')">设置</button></div></div>
+      <div class="gbar"><i style="width:${prog.toFixed(1)}%"></i></div>
+      <div class="muted">已完成 ${prog.toFixed(1)}%</div>
+      <div class="gstats">
+        <div class="gstat"><div class="t">当前余额</div><div class="v">${fmt(bal)}</div></div>
+        <div class="gstat"><div class="t">其中现金 / 投资</div><div class="v" style="font-size:13px">${fmt(cash)} / ${fmt(hv)}</div></div>
+        <div class="gstat"><div class="t">${g.type==='retire'?'90岁时结余（推演）':'到期推演金额'}</div><div class="v ${onTrack?'up':'down'}">${fmt(Math.max(0,proj.end))}</div></div>
+        <div class="gstat"><div class="t">达标所需月供</div><div class="v">${g.type==='retire'?(onTrack?'当前计划可行':'需提高月供'):fmt(reqM)}</div></div>
+      </div>
+      <div class="gcols">
+        <div>
+          <div style="font-weight:700;font-size:13px;margin-bottom:6px">📒 记账 Ledger <span class="muted" style="font-weight:400">（${g.type==='edu'?'红包/压岁钱一笔笔记，支出或转投资记负数':'存入为正，支出/转投资为负'}）</span></div>
+          <table><thead><tr><th>日期</th><th>${esc(t.ledgerFrom)}</th><th>金额</th><th>备注</th><th></th></tr></thead><tbody>
+          ${(g.ledger||[]).map((e,i)=>`<tr><td>${esc(e.date)}</td><td>${esc(e.from||'--')}</td><td class="${e.amt>=0?'up':'down'}">${e.amt>=0?'+':''}${fmt(inBase(e.amt,e.ccy),baseCcy)}</td><td class="muted">${esc(e.note||'')}</td><td><button class="act" onclick="delLedger('${g.id}',${i})">删</button></td></tr>`).join('')}
+          </tbody></table>
+          <div class="ledger-add">
+            <input type="date" id="ld_${g.id}" value="${new Date().toISOString().slice(0,10)}">
+            <input id="lf_${g.id}" placeholder="${esc(t.ledgerFrom)}">
+            <input id="la_${g.id}" type="number" step="any" placeholder="金额">
+            <select id="lc_${g.id}"><option>CNY</option><option>USD</option><option>HKD</option></select>
+            <button class="btn sm primary" onclick="addLedger('${g.id}')">记一笔</button>
+          </div>
+          <input id="ln_${g.id}" placeholder="备注（可选，如：2026 新年红包）" style="margin-top:6px;width:100%;padding:6px 8px;border:1px solid var(--line);border-radius:7px;font-size:12.5px">
+        </div>
+        <div>
+          <div style="font-weight:700;font-size:13px;margin-bottom:6px">📈 目标推演 <span class="muted" style="font-weight:400">余额按预期年化复利 + 月供</span></div>
+          <div style="position:relative;height:150px"><canvas id="gch_${g.id}"></canvas></div>
+          <div style="font-weight:700;font-size:13px;margin:10px 0 4px">💼 专属持仓 <button class="cat-add" onclick="openAdd('securities','${g.id}')">＋</button></div>
+          ${hlist.length?hlist.map(h=>{const r=valueOf(h);return`<div class="cat-row" onclick="editItem('${h.id}')"><span>${esc(r.liveName||h.name)}</span><span>${fmt(r.val)}</span></div>`;}).join(''):'<div class="muted">尚未配置投资，余额以现金计。点 ＋ 把这笔钱投出去。</div>'}
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+  goals.forEach(g=>{
+    const proj=goalProjection(g);
+    const el=document.getElementById('gch_'+g.id);if(!el)return;
+    goalCharts[g.id]=new Chart(el,{type:'line',
+      data:{labels:proj.pts.map(p=>p.x),datasets:[
+        {data:proj.pts.map(p=>p.y),borderColor:'#19c39c',backgroundColor:'rgba(25,195,156,.1)',fill:true,tension:.25,pointRadius:0},
+        ...(g.type!=='retire'?[{data:proj.pts.map(()=>g.target),borderColor:'#e0245e',borderDash:[5,4],pointRadius:0}]:[])]},
+      options:{maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{ticks:{callback:v=>fmt(v),font:{size:10}}},x:{ticks:{font:{size:10},maxTicksLimit:8}}}}});
+  });
+}
+
+/* ================= Improve：体检 ================= */
+function renderImprove(rows,total,cash){
+  if(!total){impScore.textContent='--';impActions.innerHTML='<li>添加资产后自动体检。</li>';impSubs.innerHTML='';return;}
+  let score=100;const acts=[];
+  const catSet=new Set(rows.map(r=>r.h.cat));if(goals.some(g=>goalCash(g)>0))catSet.add('cash');
+  const top=rows.slice().sort((a,b)=>b.val-a.val)[0];
+  const topW=top?top.val/total*100:0;
+  const cashW=cash/total*100;
+  if(catSet.size<3){score-=12;acts.push('🧩 资产类别只有 '+catSet.size+' 类：考虑加入债券或商品类对冲股票波动。');}
+  if(topW>25){score-=15;acts.push(`⚖️ 单一持仓 <b>${esc(top.liveName||top.h.name)}</b> 占净值 ${topW.toFixed(1)}%，集中度偏高，考虑分批减仓或加其他资产稀释。`);}
+  if(cashW>40){score-=10;acts.push(`💤 现金占比 ${cashW.toFixed(1)}%，存在闲置拖累：可配置货基/短债/国债逆回购等低风险生息资产。`);}
+  if(cashW<5){score-=5;acts.push('🚨 现金占比不足 5%，应急流动性偏弱，建议保留 3-6 个月开支。');}
+  const lev=rows.filter(r=>r.h.kind==='lev');
+  const levW=lev.reduce((s,r)=>s+r.val,0)/total*100;
+  if(levW>10){score-=10;acts.push(`⚡ 杠杆 ETF（SOXL/TQQQ 等）占比 ${levW.toFixed(1)}%：三倍杠杆有波动损耗（volatility decay），不适合长期持有，建议作为短期工具并设止损。`);}
+  const eq=rows.filter(r=>r.h.sym&&/^(us|hk|sh|sz)/.test(r.h.sym));
+  const mkts=new Set(eq.map(r=>r.h.sym.startsWith('us')?'us':r.h.sym.startsWith('hk')?'hk':'cn'));
+  if(eq.length>=2&&mkts.size===1){score-=6;acts.push('🌍 股票全部集中在单一市场，可跨美/港/A 分散单一市场政策与汇率风险。');}
+  if(!catSet.has('bond')&&!rows.some(r=>r.h.kind==='bond')){score-=4;acts.push('📉 暂无债券类资产（可用 TLT/AGG/国债ETF）：股债相关性长期偏低，是改善风险调整后收益最直接的工具。');}
+  const corr=getCorrCache();
+  if(corr&&corr.high&&corr.high.length){score-=Math.min(10,corr.high.length*4);acts.push(`🔗 检测到 ${corr.high.length} 对高相关持仓（见下方矩阵）：同涨同跌，分散效果有限。`);}
+  if(!acts.length)acts.push('✅ 当前结构未触发预警规则。保持记录，定期（季度）再平衡即可。');
+  score=Math.max(20,Math.round(score));
+  impScore.textContent=score;
+  impGrade.textContent=score>=85?'良好 Good':score>=70?'一般 Fair':'待优化 Needs work';
+  impScore.style.color=score>=85?'var(--green)':score>=70?'var(--amber)':'var(--red)';
+  impSubs.innerHTML=[['类别分散',catSet.size+'/7'],['最大持仓占比',topW.toFixed(0)+'%'],['现金占比',cashW.toFixed(0)+'%']]
+    .map(([t,v])=>`<div class="subscore"><div class="v">${v}</div><div class="t">${t}</div></div>`).join('');
+  impActions.innerHTML=acts.map(a=>`<li>${a}</li>`).join('');
+}
+
+/* ====== 相关性 ====== */
+function getCorrCache(){try{const c=JSON.parse(localStorage.getItem(LS.CORR)||'null');if(c&&Date.now()-c.t<24*3600*1000)return c;}catch(_){}return null;}
+function klineJsonp(code,i){
+  return new Promise(resolve=>{
+    const v='__kl'+i+'_'+(Date.now()%1e4);
+    jsonp(`https://web.ifzq.gtimg.cn/appstock/app/fqkline/get?_var=${v}&param=${code},day,,,120,qfq`)
+      .then(()=>{const d=window[v];delete window[v];
+        const k=d&&d.data&&d.data[code];
+        const arr=k&&(k.qfqday||k.day);
+        resolve(arr?arr.map(r=>({d:r[0],c:+r[2]})):null);})
+      .catch(()=>resolve(null));
+  });
+}
+async function stockSeries(sym,i){
+  if(/^(sh|sz|hk)/.test(sym))return klineJsonp(sym,i);
+  if(sym.startsWith('us'))return(await klineJsonp(sym+'.OQ',i))||(await klineJsonp(sym+'.N',i+500))||(await klineJsonp(sym+'.AM',i+900));
+  return null;
+}
+async function cryptoSeries(id){
+  try{
+    const r=await fetch(`https://api.coingecko.com/api/v3/coins/${id}/market_chart?vs_currency=usd&days=120&interval=daily`);
+    const j=await r.json();
+    return(j.prices||[]).map(p=>({d:new Date(p[0]).toISOString().slice(0,10),c:p[1]}));
+  }catch(e){return null;}
+}
+function pearson(a,b){
+  const n=a.length;if(n<10)return null;
+  const ma=a.reduce((s,x)=>s+x,0)/n,mb=b.reduce((s,x)=>s+x,0)/n;
+  let num=0,da=0,db=0;
+  for(let i=0;i<n;i++){const x=a[i]-ma,y=b[i]-mb;num+=x*y;da+=x*x;db+=y*y;}
+  return da&&db?num/Math.sqrt(da*db):null;
+}
+async function computeCorr(){
+  const items=holdings.filter(h=>h.sym&&!h.sym.startsWith('hf_')).reduce((m,h)=>{if(!m.find(x=>x.sym===h.sym))m.push({sym:h.sym,name:(quotes[h.sym]||{}).name||h.name});return m;},[]);
+  if(items.length<2){corrStat.textContent='至少需要 2 个可报价持仓（股票/ETF/加密）。';return;}
+  corrStat.textContent='拉取K线中…';btnCorr.disabled=true;
+  const series={};
+  for(let i=0;i<items.length;i++){
+    const it=items[i];
+    corrStat.textContent=`拉取K线 ${i+1}/${items.length}：${it.name}`;
+    series[it.sym]=it.sym.startsWith('cg_')?await cryptoSeries(it.sym.slice(3)):await stockSeries(it.sym,i);
+    await new Promise(r=>setTimeout(r,250));
+  }
+  const ok=items.filter(it=>series[it.sym]&&series[it.sym].length>20);
+  if(ok.length<2){corrStat.textContent='K线获取失败，请稍后重试。';btnCorr.disabled=false;return;}
+  const px={};
+  ok.forEach(it=>{const m={};series[it.sym].forEach(p=>m[p.d]=p.c);px[it.sym]=m;});
+  const matrix=[],high=[],vols=[];
+  ok.forEach(it=>{
+    const days=Object.keys(px[it.sym]).sort();const r=[];
+    for(let i=1;i<days.length;i++){const a=px[it.sym][days[i-1]],b=px[it.sym][days[i]];if(a>0)r.push(Math.log(b/a));}
+    const mu=r.reduce((s,x)=>s+x,0)/r.length;
+    vols.push(Math.sqrt(r.reduce((s,x)=>s+(x-mu)*(x-mu),0)/(r.length-1))*Math.sqrt(252)*100);
+  });
+  for(let i=0;i<ok.length;i++){
+    matrix[i]=[];
+    for(let j=0;j<ok.length;j++){
+      if(i===j){matrix[i][j]=1;continue;}
+      const da=px[ok[i].sym],db=px[ok[j].sym];
+      const common=Object.keys(da).filter(d=>db[d]!=null).sort();
+      const ra=[],rb=[];
+      for(let k=1;k<common.length;k++){
+        ra.push(Math.log(da[common[k]]/da[common[k-1]]));
+        rb.push(Math.log(db[common[k]]/db[common[k-1]]));
+      }
+      matrix[i][j]=pearson(ra,rb);
+      if(i<j&&matrix[i][j]!=null&&matrix[i][j]>0.75)high.push([ok[i].name,ok[j].name,matrix[i][j]]);
+    }
+  }
+  const data={t:Date.now(),names:ok.map(o=>o.name),syms:ok.map(o=>o.sym),matrix,high,vols};
+  localStorage.setItem(LS.CORR,JSON.stringify(data));
+  drawCorr(data);
+  corrStat.textContent='已更新 '+new Date().toLocaleTimeString()+'（缓存24小时，已用于预期风险计算）';
+  btnCorr.disabled=false;
+  render();
+}
+function drawCorr(d){
+  if(!d){corrBox.innerHTML='';corrWarns.innerHTML='';return;}
+  let h='<table><tr><th></th>'+d.names.map(n=>`<th>${esc(n)}</th>`).join('')+'<th>年化波动</th></tr>';
+  d.matrix.forEach((row,i)=>{
+    h+=`<tr><th>${esc(d.names[i])}</th>`+row.map(v=>{
+      if(v==null)return'<td>--</td>';
+      const bg=v>=0?`rgba(224,36,94,${(Math.max(0,v)*0.55).toFixed(2)})`:`rgba(14,159,110,${(Math.abs(v)*0.55).toFixed(2)})`;
+      return`<td style="background:${bg}">${v.toFixed(2)}</td>`;}).join('')+`<td>${d.vols[i]?d.vols[i].toFixed(0)+'%':'--'}</td></tr>`;
+  });
+  corrBox.innerHTML=h+'</table>';
+  corrWarns.innerHTML=d.high.length?`<div class="warn">⚠️ 高相关（&gt;0.75）持仓对：${d.high.map(x=>`<b>${esc(x[0])} × ${esc(x[1])}</b>（${x[2].toFixed(2)}）`).join('；')}。建议检查是否重复暴露于同一主题，替换其中之一为低相关资产。</div>`:'<div class="warn ok">✅ 未发现相关系数 &gt;0.75 的持仓对，组合分散度尚可。</div>';
+}
+
+/* ================= More：保险 ================= */
+function persistP(){localStorage.setItem(LS.POL,JSON.stringify(policies));}
+function saveProfile(){
+  profile={income:+pfIncome.value||0,spend:+pfSpend.value||0,debt:+pfDebt.value||0};
+  localStorage.setItem(LS.PF,JSON.stringify(profile));render();
+}
+function openPolicy(id){
+  pEditId=id||null;
+  pTitle.textContent=id?'编辑保单':'添加保单';
+  const p=id?policies.find(x=>x.id===id):null;
+  pType.value=p?p.type:'ci';pInsured.value=p?p.insured:'';pName.value=p?p.name:'';pCompany.value=p?p.company:'';
+  pSum.value=p?p.sum:'';pSumCcy.value=p?p.sumCcy:'CNY';pPrem.value=p?p.prem:'';pPremCcy.value=p?p.premCcy:'CNY';
+  pCV.value=p&&p.cv||'';pCVCcy.value=p?p.cvCcy:'CNY';pNote.value=p&&p.note||'';
+  pOverlay.classList.add('show');
+}
+function savePolicy(){
+  if(!pName.value.trim())return alert('请填写保单名称');
+  const p={id:pEditId||('p'+Date.now()),type:pType.value,insured:pInsured.value.trim(),name:pName.value.trim(),company:pCompany.value.trim(),sum:+pSum.value||0,sumCcy:pSumCcy.value,prem:+pPrem.value||0,premCcy:pPremCcy.value,cv:+pCV.value||0,cvCcy:pCVCcy.value,note:pNote.value.trim()};
+  if(pEditId)policies=policies.map(x=>x.id===pEditId?p:x);else policies.push(p);
+  persistP();pOverlay.classList.remove('show');render();
+}
+function delPolicy(id){if(confirm('删除该保单？')){policies=policies.filter(x=>x.id!==id);persistP();render();}}
+function renderInsurance(cash){
+  pfIncome.value=profile.income||'';pfSpend.value=profile.spend||'';pfDebt.value=profile.debt||'';
+  const prem=policies.reduce((s,p)=>s+inBase(p.prem,p.premCcy),0);
+  const ci=policies.filter(p=>p.type==='ci').reduce((s,p)=>s+inBase(p.sum,p.sumCcy),0);
+  const life=policies.filter(p=>p.type==='life').reduce((s,p)=>s+inBase(p.sum,p.sumCcy),0);
+  const cv=polCVTotal();
+  insPrem.textContent=fmt(prem);
+  insPremS.textContent=profile.income?('占年收入 '+(prem/profile.income*100).toFixed(1)+'%'):'';
+  insCI.textContent=fmt(ci);insLife.textContent=fmt(life);insCV.textContent=fmt(cv);
+  polBody.innerHTML=policies.map(p=>`<tr>
+    <td><span class="tag" style="background:#5b8def">${POL_TYPES[p.type]}</span></td>
+    <td><div class="nm">${esc(p.name)}</div><div class="cd">${esc(p.company||'')}</div></td>
+    <td>${esc(p.insured||'--')}</td>
+    <td>${p.sum?fmt(inBase(p.sum,p.sumCcy)):'--'}</td>
+    <td>${p.prem?fmt(inBase(p.prem,p.premCcy)):'--'}</td>
+    <td>${p.cv?fmt(inBase(p.cv,p.cvCcy)):'--'}</td>
+    <td><button class="act" onclick="openPolicy('${p.id}')">编辑</button><button class="act" onclick="delPolicy('${p.id}')">删除</button></td></tr>`).join('');
+  polEmpty.style.display=policies.length?'none':'block';
+  const checks=[];
+  if(profile.spend){
+    const months=cash/(profile.spend/12);
+    checks.push(months>=6?`✅ 应急金：现金可覆盖约 ${months.toFixed(0)} 个月支出（≥6 个月达标）。`:`🚨 应急金：现金仅覆盖约 ${months.toFixed(1)} 个月支出，建议保留 6 个月以上再做高风险投资。`);
+  }
+  if(profile.income){
+    checks.push(ci>=profile.income*5?'✅ 重疾保障：总保额已达年收入 5 倍的常用基准。':`⚠️ 重疾保障：总保额 ${fmt(ci)} 低于年收入 5 倍（${fmt(profile.income*5)}）的常用基准——重疾的真实成本是「治疗费 + 3-5 年收入中断」。`);
+    checks.push(prem<=profile.income*0.15?'✅ 保费负担：年缴保费在年收入 15% 以内。':'⚠️ 保费负担：年缴保费超过年收入 15%，注意现金流压力，优先保障型、压缩储蓄型。');
+  }
+  if(profile.debt||profile.spend){
+    const need=(profile.debt||0)+(profile.spend||0)*10;
+    checks.push(life>=need?'✅ 寿险保障：保额足以覆盖「负债 + 10 年家庭支出」。':`⚠️ 寿险保障：家庭支柱保额建议 ≥ 负债 + 10 年支出（约 ${fmt(need)}），当前 ${fmt(life)}。定期寿险是最便宜的杠杆。`);
+  }
+  if(!policies.some(p=>p.type==='med'))checks.push('⚠️ 未记录医疗险：百万医疗/高端医疗是最基础的防破产保障，建议优先配置。');
+  if(!checks.length)checks.push('填写上方家庭年收入/支出/负债后，自动运行保障缺口体检。');
+  insChecks.innerHTML=checks.map(c=>`<li>${c}</li>`).join('');
+}
+
+/* ====== 税务与身份内容（原创整理，知识截至2025年中） ====== */
+const TAX={
+cn:`<details open><summary>🇨🇳 中国内地税务居民 · 投资相关要点</summary><ul>
+<li><b>境内股票</b>：A股二级市场买卖差价暂免个税；股息按持股期限差别化（持股&gt;1年免，1月-1年减半计10%，&lt;1月20%）。</li>
+<li><b>港股通</b>：股息红利统一代扣 20%（H股由公司代扣），买卖价差暂免；直接境外券商持仓的资本利得理论上属境外所得，需关注年度汇算与申报趋势。</li>
+<li><b>境外所得</b>：中国对税务居民全球所得征税，近年对境外投资收益申报的征管明显加强（CRS 信息交换已常态化），合规申报是底线。</li>
+<li><b>加密资产</b>：境内交易环节不受监管保护，处置收益的税务定性尚不统一，跨境持有者应保留完整记录。</li>
+<li><b>优化方向</b>：用好持股期限规则（长持免股息税）、家庭成员账户合理分配、QDII/互认基金等合规通道。</li></ul></details>`,
+hk:`<details open><summary>🇭🇰 香港税务居民 · 投资相关要点</summary><ul>
+<li><b>无资本利得税、无股息税、无遗产税</b>：二级市场投资收益基本免税，这是身份规划的核心吸引力。</li>
+<li><b>薪俸税</b>：累进最高 17%（或标准税率 15%/16%），只对香港来源就业收入征税。</li>
+<li><b>地域来源原则</b>：境外被动收入原则上不征税；2023 年起 FSIE 制度对跨国企业集团的离岸被动收入有经济实质要求（主要影响公司架构，个人散户影响小）。</li>
+<li><b>买卖港股</b>：印花税双边各 0.1%；频繁交易若被认定为经营性质理论上可征利得税（实务罕见于个人）。</li>
+<li><b>注意</b>：以香港身份持有美股股息预扣 30%（内地税务居民为 10%），高股息美股配置需算这笔账。</li></ul></details>`,
+sg:`<details open><summary>🇸🇬 新加坡税务居民 · 投资相关要点</summary><ul>
+<li><b>无资本利得税</b>：个人投资股票、基金、加密资产的处置收益一般免税（频繁交易构成营业除外）。</li>
+<li><b>股息</b>：一级税制，本地股息到手免税；美股股息同样被美方预扣 30%。</li>
+<li><b>个税</b>：累进最高 24%，仅对新加坡来源收入及部分类型汇入境外收入征税，个人境外投资收益一般不征。</li>
+<li><b>家族办公室</b>：13O/13U 免税计划有 AUM、本地投资、雇佣等门槛且近年持续收紧，适合资产规模大的家庭。</li>
+<li><b>对比</b>：与香港同为低税地，差异在居留要求、家办政策与教育体系，常作港新二选一比较。</li></ul></details>`,
+us:`<details open><summary>🇺🇸 美国税务居民（公民/绿卡/实质居留）· 投资相关要点</summary><ul>
+<li><b>全球征税</b>：成为美国税务居民后全球收入均需申报纳税；放弃绿卡/国籍可能触发退出税。</li>
+<li><b>资本利得</b>：持有&gt;1年为长期，税率 0/15/20%（高收入另加 3.8% NIIT）；短期按普通所得最高 37%。</li>
+<li><b>PFIC 陷阱</b>：持有非美注册基金/ETF（含很多香港、内地基金）触发惩罚性税则，移民前应处理或换成美国注册基金。</li>
+<li><b>申报义务</b>：FBAR（境外账户合计&gt;1万美元）+ FATCA 8938，漏报罚款极重；移民前资产重组（提高成本基础、变现免税收益）是关键窗口。</li>
+<li><b>遗产税</b>：公民/居民豁免额高（2025约1399万美元/人），但非居民外国人在美资产豁免仅 6 万美元——未移民者重仓美股本身就有遗产税暴露，可用爱尔兰注册 UCITS ETF 替代。</li></ul></details>`};
+const IDENTITY={
+hk:`<details open><summary>路径选择：投资移民 vs 高才通 vs 优才</summary><ul>
+<li><b>新资本投资者入境计划 CIES</b>：投资 3,000 万港元（含限额内住宅相关规则以官方为准），无年龄学历硬门槛，适合不便满足在港受雇要求的资产型家庭。</li>
+<li><b>高才通</b>：A 类（上年收入 ≥250 万港币）、B/C 类（全球百强大学学位+经验），审批快成本低，但续签需在港有实质工作或业务。</li>
+<li><b>优才</b>：综合计分制，无需先有雇主，配额已放开，审批较慢，适合履历亮眼但暂不赴港者。</li>
+<li><b>共同点</b>：签证 → 通常居住 7 年 → 永居；7 年内是否真实在港生活是永居关键。</li></ul></details>
+<details><summary>孩子教育</summary><ul>
+<li>受养人签证随行，子女可读官津/直资/国际学校；满 7 年永居后以本地生身份考 DSE，报内地高校的华侨生路线近年政策趋严，关注居住时长要求。</li>
+<li>国际学校学费约 10-25 万港币/年，部分需买债券；学位紧张，拿到身份后尽早排位。</li></ul></details>
+<details><summary>香港买房</summary><ul>
+<li>2024 年「撤辣」后：买家印花税 BSD、新住宅印花税 NRSD 已取消，非永居购房成本与本地人基本拉平，仅缴从价印花税（最高 4.25%）。</li>
+<li>按揭：无本地收入者成数受限、压力测试更严；在港受雇后条件改善。</li></ul></details>`,
+us:`<details open><summary>路径选择：EB-1A / EB-2 NIW / EB-5</summary><ul>
+<li><b>EB-1A 杰出人才</b>：无需雇主、排期最短，但要求行业顶尖证据链（奖项/媒体/评审/高薪），适合创始人、科学家、头部从业者。</li>
+<li><b>EB-2 NIW</b>：国家利益豁免，门槛低于 EB-1A，但中国大陆出生排期长（以年计），适合提前布局。</li>
+<li><b>EB-5</b>：80 万美元投入 TEA 项目（乡村类有预留签证、排期优势明显），资金来源审查严格，项目风险需尽调。</li></ul></details>
+<details><summary>绿卡的税务代价（拿卡前必须想清楚）</summary><ul>
+<li>绿卡即全球征税起点：拿卡前完成资产重组——变现免税增值、处理 PFIC、必要时做拿卡前信托。</li>
+<li>持卡后每年 FBAR/8938 申报境外账户；长期持卡者放弃绿卡可能触发退出税。</li></ul></details>
+<details><summary>买房与持有成本</summary><ul>
+<li>房产税约 0.8%-2.5%/年（按州县），加保险与 HOA，持有成本远高于中港；外国人可贷款但利率首付更高。</li>
+<li>非居民直接持有美国房产有遗产税暴露（豁免仅 6 万美元），大额房产常用 LLC/信托架构。</li></ul></details>
+<details><summary>开户与合规现实问题</summary><ul>
+<li>成为美国人后，很多非美券商/银行（含部分香港私银）因 FATCA 合规成本拒收或清退美籍客户，开户选择反而变窄。</li>
+<li>美籍后买非美基金触发 PFIC，实务上等于只能买美国注册基金/ETF——移民前请把组合「美国化」。</li></ul></details>`,
+sg:`<details open><summary>路径选择</summary><ul>
+<li><b>GIP 全球投资者计划</b>：2023 年起门槛大幅提高（基金/家办路线 1,000 万新币级别，家办路线另有 AUM 与本地投资要求），适合超高净值。</li>
+<li><b>EP / ONE Pass</b>：ONE Pass 要求月薪 3 万新币或顶尖履历；多数专业人士走先 EP 后 PR，PR 审批弹性大无明确标准。</li>
+<li><b>家族办公室</b>：13O/13U 免税架构近年审批收紧并增加本地投资/慈善要求。</li></ul></details>
+<details><summary>教育与置业</summary><ul>
+<li>公立教育强，但外国学生学额少、学费按公民/PR/外国人分层；国际学校 3-5 万新币/年。</li>
+<li>外国人买住宅 ABSD 附加印花税 60%（2023 年起），置业成本极高；PR 首套 5%，公民首套免——身份直接决定买房成本。</li></ul></details>`,
+jp:`<details open><summary>路径选择：经营管理 vs 高度人才</summary><ul>
+<li><b>经营管理签证</b>：在日设立公司（传统门槛资本金 500 万日元起，近年有提高门槛的政策动向，以入管局最新要求为准）并实际经营，适合中小企业主；续签看经营实绩。</li>
+<li><b>高度人才签证（积分制）</b>：学历/年收/年龄/日语等计分，80 分以上最快 <b>1 年</b>申请永住、70 分 3 年——是主流国家中最快的永居通道之一；J-Skip（年收 2,000 万日元）可直接走特别高度人才。</li>
+<li><b>普通永住</b>：原则上居住 10 年；<b>入籍</b>需放弃原国籍（日本不承认双重国籍）。</li></ul></details>
+<details open><summary>税务要点（重要）</summary><ul>
+<li><b>非永住者优惠</b>：过去 10 年在日住满不足 5 年的外国人，境外源泉所得「不汇入日本则不征税」——前 5 年是境外资产的缓冲窗口。</li>
+<li>成为无限纳税义务人后全球征税，个税+住民税最高约 55%；金融资产 ≥1 亿日元离境时有<b>出国税</b>（未实现利得视同实现）。</li>
+<li>遗产税最高 55% 且范围宽，是高净值家庭对日本身份最大的顾虑点。</li></ul></details>
+<details><summary>买房与教育</summary><ul>
+<li>外国人可自由购房无身份限制；持有成本低（固定资产税 1.4% 评估值 + 都市计划税 0.3%，评估值远低于市价），东京核心区公寓是华人热门配置。</li>
+<li>公立教育近乎免费，国际学校约 200-300 万日元/年；医疗体系性价比高（国保自付 30%，高额疗养费制度封顶）。</li></ul></details>`,
+pt:`<details open><summary>黄金签证（基金路线）与其他签证</summary><ul>
+<li><b>黄金签证</b>：2023 年 10 月起取消买房路线，现行主流为 <b>50 万欧元认购合资格基金</b>（另有文化捐赠/科研/创造就业路线）；核心优势是居住要求极低（平均每年约 7 天）。</li>
+<li><b>D7 被动收入签证</b>：证明稳定被动收入（约月 870 欧元起）即可，成本低但需实际居住（每年 ≥6-8 个月）。</li>
+<li><b>D8 数字游民签证</b>：远程收入约月 3,480 欧元起，适合远程工作者。</li>
+<li><b>入籍</b>：现行法律居住 5 年后可申请（葡语 A2），获欧盟护照；⚠️ 2025 年国籍法修法动向可能延长年限，申请前务必核实最新法律。</li></ul></details>
+<details open><summary>税务要点</summary><ul>
+<li>旧 <b>NHR</b>（非惯常居民 10 年优惠税制）已于 2024 年关闭，被针对科研/创新人才的 <b>IFICI（俗称 NHR 2.0）</b>取代，覆盖面窄得多。</li>
+<li>普通税务居民全球征税，累进最高 48%（另有附加税）；若只维持黄金签证、每年住 7 天不构成税务居民，则葡萄牙基本不碰你的全球资产——「身份与税务解绑」正是其受欢迎的原因。</li>
+<li>加密资产：持有 ≥1 年的处置收益目前免税（短于 1 年按 28%），对币圈友好。</li></ul></details>
+<details><summary>教育与生活</summary><ul>
+<li>欧盟身份带来全欧教育/执业/居住权；国际学校 1-2 万欧元/年，成本远低于英美。</li>
+<li>里斯本/波尔图华人社区成熟，房价相对西欧低，但近年涨幅大且租金管制多，投资性买房需谨慎测算。</li></ul></details>`,
+xs:`<details open><summary>加勒比五国（圣基茨/多米尼克/格林纳达/圣卢西亚/安提瓜）</summary><ul>
+<li><b>价格</b>：2024 年起五国协调将捐赠路线最低门槛提至 <b>20 万美元</b>级别（家庭另计），办理 6-12 个月，无居住要求。</li>
+<li><b>价值</b>：免签申根/英国等 140+ 国；圣基茨等无个税、无资本利得税、无遗产税，常用作税务身份与资产架构的「第二身份」。</li>
+<li><b>格林纳达</b>特色：免签中国 + 是美国 <b>E-2 条约国</b>（可借道申请美国 E-2 投资者签证长期居美而不入美籍税网）。</li>
+<li><b>风险</b>：欧盟持续审查加勒比护照的免签待遇（存在收紧或暂停风险），尽调趋严、代理鱼龙混杂——只走官方授权渠道。</li></ul></details>
+<details open><summary>马耳他</summary><ul>
+<li><b>永居 MPRP</b>：政府捐款+租房/买房，总成本约 15-20 万欧元起，全家四代可随行，是欧盟永居里性价比之选。</li>
+<li><b>入籍 MEIN</b>：捐赠 60-75 万欧元 + 12/36 个月居留——⚠️ 2025 年欧洲法院裁定「无真实联系的投资入籍」违反欧盟法，马耳他被要求调整，新申请存在重大不确定性，签约前务必确认最新方案。</li></ul></details>
+<details open><summary>土耳其</summary><ul>
+<li><b>40 万美元房产</b>（持有 3 年）或 50 万美元存款，全家约 6-12 个月拿护照，无居住语言要求。</li>
+<li>价值：美国 <b>E-2 条约国</b>跳板 + 大国博弈下的身份备份；护照免签 110+ 国但<b>不含申根/美/英</b>。</li>
+<li>风险：里拉长期贬值，房产以美元计价的真实回报与退出流动性需谨慎评估。</li></ul></details>
+<details open><summary>通用提醒</summary><ul>
+<li><b>护照 ≠ 税务居民</b>：CRS 下银行按「税务居民身份」申报信息，仅换护照不改变中国税务居民地位；身份规划必须与实际居住安排、税务规划一体设计。</li>
+<li>多身份持有者注意各国出入境申报、外汇与资金来源合规，所有文件走持牌律师与官方授权渠道。</li></ul></details>`};
+function pickTax(k){document.querySelectorAll('#taxPills .pill').forEach(p=>p.classList.toggle('on',p.dataset.k===k));taxBody.innerHTML=TAX[k];}
+function pickId(k){document.querySelectorAll('#idPills .pill').forEach(p=>p.classList.toggle('on',p.dataset.k===k));idBody.innerHTML=IDENTITY[k];}
+
+/* ================= 增删改：资产 ================= */
+function persist(){localStorage.setItem(LS.H,JSON.stringify(holdings));}
+function fillAcct(){mAcct.innerHTML='<option value="main">主组合</option>'+goals.map(g=>`<option value="${g.id}">${GOAL_TYPES[g.type].icon} ${esc(g.name)}</option>`).join('');}
+function openAdd(cat,acct){
+  editId=null;mTitle.textContent='添加资产';fillAcct();
+  mCat.value=cat||'securities';mAcct.value=acct||'main';
+  mSearch.value='';mPicked.textContent='';mPicked.dataset.sym='';mPicked.dataset.kind='';
+  mQty.value='';mCost.value='';mName.value='';mVal.value='';mCostM.value='';mCmdQty.value='';mCmdCost.value='';
+  syncFields();overlay.classList.add('show');
+}
+function editItem(id){
+  const h=holdings.find(x=>x.id===id);if(!h)return;
+  editId=id;mTitle.textContent='编辑资产';fillAcct();
+  mCat.value=h.cat;mAcct.value=h.account||'main';
+  if(h.sym&&h.sym.startsWith('hf_')){mCmd.value=h.sym;mCmdQty.value=h.qty;mCmdCost.value=h.cost||'';}
+  else if(h.sym){
+    mMarket.value=h.sym.startsWith('cg_')?'cg':h.sym.startsWith('us')?'us':h.sym.startsWith('hk')?'hk':'cn';
+    mSearch.value=h.name;mPicked.textContent='已选：'+h.name+'（'+h.sym+'）';mPicked.dataset.sym=h.sym;mPicked.dataset.kind=h.kind||'';mQty.value=h.qty;mCost.value=h.cost||'';
+  }else{if(h.cat==='commodity')mCmd.value='manual';mName.value=h.name;mVal.value=h.val;mCcy.value=h.ccy;mCostM.value=h.costM||'';mCoupon.value=h.coupon||'';}
+  syncFields();overlay.classList.add('show');
+}
+function delItem(id){if(confirm('删除该资产？')){holdings=holdings.filter(x=>x.id!==id);persist();render();}}
+function syncFields(){
+  const cat=mCat.value,isCmd=cat==='commodity',cmdManual=isCmd&&mCmd.value==='manual';
+  secFields.style.display=cat==='securities'?'block':'none';
+  cmdFields.style.display=isCmd?'block':'none';
+  cmdQtyRow.style.display=isCmd&&!cmdManual?'grid':'none';
+  manFields.style.display=(cat!=='securities'&&!(isCmd&&!cmdManual))?'block':'none';
+  couponWrap.style.display=cat==='bond'?'block':'none';
+}
+function save(){
+  const cat=mCat.value,acct=mAcct.value;
+  let h={id:editId||('h'+Date.now()),cat,account:acct};
+  if(cat==='securities'){
+    let sym=mPicked.dataset.sym,kind=mPicked.dataset.kind||undefined;
+    const t=mSearch.value.trim();
+    if(!sym){
+      if(!t)return alert('请选择或输入代码');
+      const mk=mMarket.value;
+      if(mk==='cg'){const id=CG_MAP[t.toUpperCase()];if(!id)return alert('暂支持：'+Object.keys(CG_MAP).join('/'));sym='cg_'+id;kind='crypto';}
+      else sym=mk==='us'?'us'+t.toUpperCase():mk==='hk'?'hk'+t.padStart(5,'0'):(t.startsWith('6')||t.startsWith('5')?'sh':'sz')+t;
+    }
+    if(!+mQty.value)return alert('请输入数量');
+    h={...h,sym,kind,name:t||sym,qty:+mQty.value,cost:+mCost.value||null};
+  }else if(cat==='commodity'&&mCmd.value!=='manual'){
+    if(!+mCmdQty.value)return alert('请输入数量');
+    h={...h,sym:mCmd.value,name:mCmd.options[mCmd.selectedIndex].text.split('（')[0],qty:+mCmdQty.value,cost:+mCmdCost.value||null};
+  }else{
+    if(!mName.value.trim()||!+mVal.value)return alert('请填写名称与估值');
+    h={...h,name:mName.value.trim(),val:+mVal.value,ccy:mCcy.value,costM:+mCostM.value||null,coupon:+mCoupon.value||null};
+  }
+  if(editId)holdings=holdings.map(x=>x.id===editId?h:x);else holdings.push(h);
+  persist();overlay.classList.remove('show');
+  fetchQuotes().then(()=>{render();renderNews();});render();
+}
+const KIND_TAG={idx:'📊指数',etf:'ETF',lev:'⚡杠杆ETF',bond:'债券ETF',gold:'黄金',silver:'白银',oil:'原油',crypto:'加密ETF'};
+function suggest(){
+  const t=mSearch.value.trim().toLowerCase();mPicked.dataset.sym='';mPicked.dataset.kind='';
+  const list=marketList(mMarket.value);
+  if(!t){mSugg.style.display='none';return;}
+  const hits=list.filter(x=>x.code.toLowerCase().includes(t)||x.name.toLowerCase().includes(t)).slice(0,14);
+  mSugg.innerHTML=hits.map(x=>`<div onclick="pick('${x.sym}','${esc(x.name).replace(/'/g,'')}','${x.kind||''}')"><span>${esc(x.name)}</span><small>${esc(x.code)}${x.kind?' · '+(KIND_TAG[x.kind]||x.kind):''}</small></div>`).join('');
+  mSugg.style.display=hits.length?'block':'none';
+}
+function pick(sym,name,kind){mSearch.value=name;mPicked.textContent='已选：'+name+'（'+sym+'）'+(kind&&KIND_TAG[kind]?' · '+KIND_TAG[kind]:'');mPicked.dataset.sym=sym;mPicked.dataset.kind=kind||'';mSugg.style.display='none';}
+
+/* ================= 导入导出 / Tab ================= */
+function showTab(t){
+  document.querySelectorAll('.tabbtn').forEach(b=>b.classList.toggle('on',b.dataset.tab===t));
+  ['track','plan','improve','more'].forEach(x=>document.getElementById('tab-'+x).style.display=x===t?'block':'none');
+}
+btnExport.onclick=()=>{
+  const blob=new Blob([JSON.stringify({holdings,goals,policies,profile,history:JSON.parse(localStorage.getItem(LS.HIST)||'{}')},null,2)],{type:'application/json'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='wealthdeck-backup.json';a.click();
+};
+btnImport.onclick=()=>fileImp.click();
+fileImp.onchange=e=>{
+  const f=e.target.files[0];if(!f)return;
+  const r=new FileReader();
+  r.onload=()=>{try{const d=JSON.parse(r.result);
+    if(d.holdings){holdings=d.holdings.map(h=>({account:'main',...h}));persist();}
+    if(d.goals){goals=d.goals;persistG();}
+    if(d.policies){policies=d.policies;persistP();}
+    if(d.profile){profile=d.profile;localStorage.setItem(LS.PF,JSON.stringify(profile));}
+    if(d.history)localStorage.setItem(LS.HIST,JSON.stringify(d.history));
+    fetchQuotes().then(()=>{render();renderNews();});render();}catch(_){alert('文件格式错误');}};
+  r.readAsText(f);
+};
+
+/* ================= 绑定 & 启动 ================= */
+const $=id=>document.getElementById(id);
+['mTitle','mCat','mAcct','mMarket','mSearch','mSugg','mPicked','mQty','mCost','mName','mVal','mCcy','mCostM','mCoupon','mCmd','mCmdQty','mCmdCost','overlay','secFields','cmdFields','manFields','couponWrap','cmdQtyRow','tbody','emptyHint','sbNW','sbChg','sbCats','kNW','kNWs','kDay','kDays','kCash','kCashs','kCnt','thVal','lastUpd','pulseDaily','pulseMacro','pulseGeneral','pulseMine','goalList','gOverlay','gTitle','gName','gTarget','gYear','gRet','gMonthly','gRetireFields','gAgeNow','gAgeRet','gSpend','gPension','gSave','gCancel','gDelete','impScore','impGrade','impSubs','impActions','btnCorr','corrStat','corrBox','corrWarns','taxBody','idBody','stTotal','stCash','stCashS','stRet','stRetS','stRisk','stRiskS','stDiv','pOverlay','pTitle','pType','pInsured','pName','pCompany','pSum','pSumCcy','pPrem','pPremCcy','pCV','pCVCcy','pNote','pCancel','pSaveBtn','polBody','polEmpty','insPrem','insPremS','insCI','insLife','insCV','insChecks','pfIncome','pfSpend','pfDebt']
+.forEach(id=>window[id]=$(id));
+mCat.innerHTML=Object.entries(CATS).map(([k,c])=>`<option value="${k}">${c.label}</option>`).join('');
+mCat.onchange=syncFields;mCmd.onchange=syncFields;
+mSearch.oninput=suggest;mMarket.onchange=suggest;
+$('btnAdd').onclick=()=>openAdd();
+$('mCancel').onclick=()=>overlay.classList.remove('show');
+$('mSave').onclick=save;
+overlay.onclick=e=>{if(e.target===overlay)overlay.classList.remove('show');};
+gOverlay.onclick=e=>{if(e.target===gOverlay)gOverlay.classList.remove('show');};
+pOverlay.onclick=e=>{if(e.target===pOverlay)pOverlay.classList.remove('show');};
+gSave.onclick=saveGoal;gCancel.onclick=()=>gOverlay.classList.remove('show');gDelete.onclick=delGoal;
+pSaveBtn.onclick=savePolicy;pCancel.onclick=()=>pOverlay.classList.remove('show');
+$('btnRefresh').onclick=()=>{Object.keys(localStorage).filter(k=>k.startsWith('wd_news_')).forEach(k=>localStorage.removeItem(k));fetchQuotes().then(()=>{render();renderNews();});};
+$('baseCcy').value=baseCcy;
+$('baseCcy').onchange=e=>{baseCcy=e.target.value;localStorage.setItem(LS.CCY,baseCcy);render();};
+btnCorr.onclick=computeCorr;
+pickTax('cn');pickId('hk');
+(async function init(){
+  render();
+  drawCorr(getCorrCache());
+  refreshRankLists();
+  await fetchQuotes();
+  render();renderNews();
+  setInterval(()=>fetchQuotes().then(render),30000);
+})();
+</script>
+</body>
+</html>

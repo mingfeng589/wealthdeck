@@ -1,0 +1,132 @@
+/* Modal overlay & modal chrome — adapted from wealthdeck.html lines 118-131 */
+
+.overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(20, 28, 45, 0.45);
+  display: none;
+  align-items: flex-start;
+  justify-content: center;
+  padding-top: 6vh;
+  z-index: 50;
+}
+
+.show {
+  display: flex;
+}
+
+.modal {
+  background: #fff;
+  border-radius: 14px;
+  width: 470px;
+  max-width: 94vw;
+  padding: 20px;
+  max-height: 86vh;
+  overflow: auto;
+}
+
+.modal h2 {
+  font-size: 16px;
+  margin-bottom: 14px;
+}
+
+/* ---- form field wrappers ---- */
+
+.f {
+  margin-bottom: 11px;
+}
+
+.f label {
+  display: block;
+  font-size: 12px;
+  color: var(--muted);
+  margin-bottom: 4px;
+}
+
+.f input,
+.f select {
+  width: 100%;
+  padding: 8px 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  font-size: 14px;
+}
+
+/* ---- two-column row ---- */
+
+.row2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+/* ---- suggestion dropdown ---- */
+
+.sugg {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  max-height: 190px;
+  overflow: auto;
+  margin-top: 4px;
+  display: none;
+}
+
+.suggShow {
+  display: block;
+}
+
+.suggItem {
+  padding: 7px 10px;
+  cursor: pointer;
+  font-size: 13px;
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.suggItem:hover {
+  background: var(--accent-soft);
+}
+
+.suggItem small {
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+/* ---- footer buttons ---- */
+
+.foot {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 6px;
+}
+
+/* ---- hint text ---- */
+
+.hint {
+  font-size: 11px;
+  color: var(--muted);
+  margin-top: 4px;
+}
+
+/* ---- Mobile ---- */
+
+@media (max-width: 768px) {
+  .overlay {
+    padding-top: 0;
+    align-items: flex-end;
+  }
+
+  .modal {
+    width: 100%;
+    max-width: 100%;
+    border-radius: 14px 14px 0 0;
+    max-height: 90vh;
+    padding: 16px;
+  }
+
+  .row2 {
+    grid-template-columns: 1fr;
+  }
+}
