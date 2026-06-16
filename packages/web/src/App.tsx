@@ -157,7 +157,7 @@ export default function App() {
           setHoldingModalOpen(true);
         },
       };
-    });
+    }).filter((cat) => cat.items.length > 0 || cat.extras.length > 0);
   }, [rows, baseCcy, gCash, polCV, goals, fx]);
 
   // Handlers

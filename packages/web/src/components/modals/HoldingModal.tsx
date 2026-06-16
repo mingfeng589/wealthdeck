@@ -211,9 +211,11 @@ const HoldingModal: React.FC<HoldingModalProps> = ({
         return;
       }
 
+      const saveCat = kind === 'crypto' ? 'other' : cat;
+
       const h: SymbolHolding = {
         id: editHolding?.id || 'h' + Date.now(),
-        cat,
+        cat: saveCat,
         account: acct,
         sym,
         kind,
