@@ -8,7 +8,8 @@
   align-items: flex-start;
   justify-content: center;
   padding-top: 6vh;
-  z-index: 50;
+  z-index: 1100;
+  overflow: hidden;
 }
 
 .show {
@@ -122,8 +123,11 @@
     width: 100%;
     max-width: 100%;
     border-radius: 14px 14px 0 0;
-    max-height: 90vh;
+    max-height: 85vh;
     padding: 16px;
+    padding-bottom: calc(16px + env(safe-area-inset-bottom, 0px));
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
   }
 
   .row2 {
