@@ -39,3 +39,16 @@ export interface HoldingValuation {
   ccy: Currency;
   liveName: string | null;
 }
+
+/** Record of a swap (换仓) — old holding archived, new holding created. */
+export interface SwapRecord {
+  id: string;
+  date: string;
+  fromName: string;
+  fromCat: CategoryKey;
+  fromVal: number;
+  fromCcy: Currency;
+  toId: string;
+  toName: string;
+  note: string;
+}

@@ -6,12 +6,11 @@ import type {
   Policy,
   Currency,
   CategoryKey,
-  Rankings,
+  SwapRecord,
 } from '@wealthdeck/shared';
-import { CATS, GOAL_TYPES, valueOf, goalCash, polCVTotal, fmt } from '@wealthdeck/shared';
+import { CATS, valueOf, goalCash, polCVTotal, fmt } from '@wealthdeck/shared';
 import { useAppState } from './data/context';
-import { fetchStockQuotes, fetchCryptoQuotes } from './services/quotes';
-import { refreshRankLists } from './services/rankings';
+import { fetchCryptoQuotes } from './services/quotes';
 import Sidebar from './components/layout/Sidebar';
 import TopNav from './components/layout/TopNav';
 import BottomNav from './components/layout/BottomNav';
@@ -29,20 +28,18 @@ type TabKey = 'track' | 'plan' | 'improve' | 'more';
 export default function App() {
   const state = useAppState();
   const {
-    holdings, goals, policies, baseCcy, fx, quotes, history,
-    setHoldings, setGoals, setPolicies, setQuotes, setFx, setHistory,
+    holdings, goals, policies, baseCcy, fx, quotes, history, swaps,
+    setHoldings, setGoals, setPolicies, setQuotes, setHistory, setSwaps,
     ready, store,
   } = state;
 
   const [activeTab, setActiveTab] = useState<TabKey>('track');
   const [lastUpdated, setLastUpdated] = useState('未更新');
-  const [rankings, setRankings] = useState<Rankings | null>(null);
 
   // Modal state
   const [holdingModalOpen, setHoldingModalOpen] = useState(false);
   const [editHolding, setEditHolding] = useState<Holding | null>(null);
   const [holdingDefaultCat, setHoldingDefaultCat] = useState<CategoryKey | undefined>();
-  const [holdingDefaultAcct, setHoldingDefaultAcct] = useState<string | undefined>();
 
   const [goalModalOpen, setGoalModalOpen] = useState(false);
   const [editGoal, setEditGoal] = useState<Goal | null>(null);
@@ -50,6 +47,8 @@ export default function App() {
 
   const [policyModalOpen, setPolicyModalOpen] = useState(false);
   const [editPolicy, setEditPolicy] = useState<Policy | null>(null);
+
+  const [swapFromHolding, setSwapFromHolding] = useState<Holding | null>(null);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -72,29 +71,17 @@ export default function App() {
   );
   const dayChange = useMemo(() => rows.reduce((s, r) => s + r.day, 0), [rows]);
 
-  // Quote refresh
+  // Quote refresh (crypto only)
   const refreshQuotes = useCallback(async () => {
-    const { quotes: sq, fx: newFx } = await fetchStockQuotes(holdings, fx);
     const cq = await fetchCryptoQuotes(holdings);
-    const merged = new Map(sq);
-    cq.forEach((v, k) => merged.set(k, v));
-    setQuotes(merged);
-    setFx(newFx);
+    setQuotes(cq);
     setLastUpdated('更新于 ' + new Date().toLocaleTimeString());
-  }, [holdings, fx, setQuotes, setFx]);
+  }, [holdings, setQuotes]);
 
-  // Init: load rankings + fetch quotes
+  // Init: fetch quotes
   useEffect(() => {
     if (!ready) return;
-    (async () => {
-      const cached = await store.getRankings();
-      if (cached) setRankings(cached);
-      refreshRankLists().then((r) => {
-        setRankings(r);
-        store.saveRankings(r);
-      }).catch(() => {});
-      await refreshQuotes().catch(() => {});
-    })();
+    refreshQuotes().catch(() => {});
   }, [ready]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // 30s polling
@@ -125,16 +112,6 @@ export default function App() {
         onClick: () => { setEditHolding(r.h); setHoldingModalOpen(true); },
       }));
       const extras: Array<{ label: string; value: string; onClick: () => void }> = [];
-      if (k === 'cash' && gCash > 0) {
-        sub += gCash;
-        goals.filter((g) => goalCash(g, baseCcy, fx) !== 0).forEach((g) => {
-          extras.push({
-            label: `${GOAL_TYPES[g.type].icon} ${g.name}·现金`,
-            value: fmt(goalCash(g, baseCcy, fx), baseCcy),
-            onClick: () => setActiveTab('plan'),
-          });
-        });
-      }
       if (k === 'other' && polCV > 0) {
         sub += polCV;
         extras.push({
@@ -153,16 +130,31 @@ export default function App() {
         onAdd: () => {
           setEditHolding(null);
           setHoldingDefaultCat(k as CategoryKey);
-          setHoldingDefaultAcct(undefined);
           setHoldingModalOpen(true);
         },
       };
     }).filter((cat) => cat.items.length > 0 || cat.extras.length > 0);
-  }, [rows, baseCcy, gCash, polCV, goals, fx]);
+  }, [rows, baseCcy, polCV, goals, fx]);
 
   // Handlers
   const handleSaveHolding = (h: Holding) => {
-    if (editHolding) {
+    if (swapFromHolding) {
+      const fromV = valueOf(swapFromHolding, quotes, baseCcy, fx);
+      const record: SwapRecord = {
+        id: 'sw' + Date.now(),
+        date: new Date().toISOString().slice(0, 10),
+        fromName: swapFromHolding.name,
+        fromCat: swapFromHolding.cat,
+        fromVal: fromV.val,
+        fromCcy: fromV.ccy,
+        toId: h.id,
+        toName: h.name,
+        note: '',
+      };
+      setHoldings([...holdings.filter((x) => x.id !== swapFromHolding.id), h]);
+      setSwaps([...swaps, record]);
+      setSwapFromHolding(null);
+    } else if (editHolding) {
       setHoldings(holdings.map((x) => (x.id === editHolding.id ? h : x)));
     } else {
       setHoldings([...holdings, h]);
@@ -171,10 +163,13 @@ export default function App() {
     refreshQuotes();
   };
 
-  const handleDeleteHolding = (id: string) => {
-    if (confirm('删除该资产？')) {
-      setHoldings(holdings.filter((x) => x.id !== id));
-    }
+  const handleSwapHolding = (id: string) => {
+    const from = holdings.find((h) => h.id === id);
+    if (!from) return;
+    setSwapFromHolding(from);
+    setEditHolding(null);
+    setHoldingDefaultCat(from.cat);
+    setHoldingModalOpen(true);
   };
 
   const handleSaveGoal = (g: Goal) => {
@@ -227,15 +222,16 @@ export default function App() {
       const text = await file.text();
       const data = JSON.parse(text);
       await store.importAll(data);
-      const [h, g, p, pf, hist] = await Promise.all([
+      const [h, g, p, pf, hist, sw] = await Promise.all([
         store.getHoldings(), store.getGoals(), store.getPolicies(),
-        store.getProfile(), store.getHistory(),
+        store.getProfile(), store.getHistory(), store.getSwaps(),
       ]);
       setHoldings(h);
       setGoals(g);
       setPolicies(p);
       state.setProfile(pf);
       setHistory(hist);
+      setSwaps(sw);
       refreshQuotes();
     } catch {
       alert('文件格式错误');
@@ -280,17 +276,16 @@ export default function App() {
               setEditHolding(holdings.find((h) => h.id === id) ?? null);
               setHoldingModalOpen(true);
             }}
-            onDeleteHolding={handleDeleteHolding}
+            onSwapHolding={handleSwapHolding}
           />
         )}
         {activeTab === 'plan' && (
           <PlanTab
             onNewGoal={(type) => { setGoalType(type); setEditGoal(null); setGoalModalOpen(true); }}
             onEditGoal={(g) => { setGoalType(g.type); setEditGoal(g); setGoalModalOpen(true); }}
-            onAddHolding={(goalId) => {
+            onAddHolding={() => {
               setEditHolding(null);
-              setHoldingDefaultCat('securities');
-              setHoldingDefaultAcct(goalId);
+              setHoldingDefaultCat('equity');
               setHoldingModalOpen(true);
             }}
             onEditHolding={(id: string) => {
@@ -317,12 +312,9 @@ export default function App() {
 
       <HoldingModal
         show={holdingModalOpen}
-        onClose={() => setHoldingModalOpen(false)}
+        onClose={() => { setHoldingModalOpen(false); setSwapFromHolding(null); }}
         editHolding={editHolding}
         defaultCat={holdingDefaultCat}
-        defaultAccount={holdingDefaultAcct}
-        goals={goals}
-        rankings={rankings}
         onSave={handleSaveHolding}
       />
       <GoalModal

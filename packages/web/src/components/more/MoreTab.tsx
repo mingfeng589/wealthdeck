@@ -1,4 +1,5 @@
 import type { Policy } from '@wealthdeck/shared';
+import { SwapHistory } from './SwapHistory';
 import { InsuranceSection } from './InsuranceSection';
 import { TaxLens } from './TaxLens';
 import { IdentityLens } from './IdentityLens';
@@ -12,6 +13,7 @@ interface MoreTabProps {
 export function MoreTab({ onAddPolicy, onEditPolicy, onDeletePolicy }: MoreTabProps) {
   return (
     <>
+      <SwapHistory />
       <InsuranceSection
         onAddPolicy={onAddPolicy}
         onEditPolicy={onEditPolicy}

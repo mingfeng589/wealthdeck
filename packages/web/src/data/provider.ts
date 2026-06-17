@@ -8,6 +8,7 @@ import type {
   Rankings,
   NewsCache,
   ExportData,
+  SwapRecord,
 } from '@wealthdeck/shared';
 
 export interface DataProvider {
@@ -25,6 +26,9 @@ export interface DataProvider {
 
   getHistory(): Promise<Record<string, number>>;
   saveHistory(history: Record<string, number>): Promise<void>;
+
+  getSwaps(): Promise<SwapRecord[]>;
+  saveSwaps(swaps: SwapRecord[]): Promise<void>;
 
   getCorrCache(): Promise<CorrCache | null>;
   saveCorrCache(data: CorrCache): Promise<void>;

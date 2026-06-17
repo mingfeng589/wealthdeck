@@ -9,6 +9,7 @@ import type {
   Rankings,
   NewsCache,
   ExportData,
+  SwapRecord,
 } from '@wealthdeck/shared';
 import type { DataProvider } from './provider';
 
@@ -20,21 +21,23 @@ interface WealthDeckDB extends DBSchema {
   history: { key: string; value: number };
   cache: { key: string; value: unknown };
   settings: { key: string; value: unknown };
+  swaps: { key: 'data'; value: SwapRecord[] };
 }
 
 const DB_NAME = 'wealthdeck';
-const DB_VERSION = 1;
+const DB_VERSION = 2;
 
 function initDB(): Promise<IDBPDatabase<WealthDeckDB>> {
   return openDB<WealthDeckDB>(DB_NAME, DB_VERSION, {
     upgrade(db) {
-      db.createObjectStore('holdings');
-      db.createObjectStore('goals');
-      db.createObjectStore('policies');
-      db.createObjectStore('profile');
-      db.createObjectStore('history');
-      db.createObjectStore('cache');
-      db.createObjectStore('settings');
+      if (!db.objectStoreNames.contains('holdings')) db.createObjectStore('holdings');
+      if (!db.objectStoreNames.contains('goals')) db.createObjectStore('goals');
+      if (!db.objectStoreNames.contains('policies')) db.createObjectStore('policies');
+      if (!db.objectStoreNames.contains('profile')) db.createObjectStore('profile');
+      if (!db.objectStoreNames.contains('history')) db.createObjectStore('history');
+      if (!db.objectStoreNames.contains('cache')) db.createObjectStore('cache');
+      if (!db.objectStoreNames.contains('settings')) db.createObjectStore('settings');
+      if (!db.objectStoreNames.contains('swaps')) db.createObjectStore('swaps');
     },
   });
 }
@@ -161,15 +164,26 @@ export class LocalStore implements DataProvider {
     await db.put('settings', ccy, 'baseCcy');
   }
 
+  async getSwaps(): Promise<SwapRecord[]> {
+    const db = await this.dbPromise;
+    return (await db.get('swaps', 'data')) ?? [];
+  }
+
+  async saveSwaps(swaps: SwapRecord[]): Promise<void> {
+    const db = await this.dbPromise;
+    await db.put('swaps', swaps, 'data');
+  }
+
   async exportAll(): Promise<ExportData> {
-    const [holdings, goals, policies, profile, history] = await Promise.all([
+    const [holdings, goals, policies, profile, history, swaps] = await Promise.all([
       this.getHoldings(),
       this.getGoals(),
       this.getPolicies(),
       this.getProfile(),
       this.getHistory(),
+      this.getSwaps(),
     ]);
-    return { holdings, goals, policies, profile, history };
+    return { holdings, goals, policies, profile, history, swaps };
   }
 
   async importAll(data: ExportData): Promise<void> {
@@ -179,6 +193,7 @@ export class LocalStore implements DataProvider {
       data.policies && this.savePolicies(data.policies),
       data.profile && this.saveProfile(data.profile),
       data.history && this.saveHistory(data.history),
+      data.swaps && this.saveSwaps(data.swaps),
     ]);
   }
 }

@@ -8,6 +8,7 @@ import type {
   Quote,
   FxRates,
   CorrCache,
+  SwapRecord,
 } from '@wealthdeck/shared';
 import type { DataProvider } from './provider';
 import { LocalStore } from './local-store';
@@ -23,6 +24,7 @@ export interface AppState {
   quotes: Map<string, Quote>;
   fx: FxRates;
   corrCache: CorrCache | null;
+  swaps: SwapRecord[];
   ready: boolean;
 
   setHoldings: (h: Holding[]) => void;
@@ -34,6 +36,7 @@ export interface AppState {
   setQuotes: (q: Map<string, Quote>) => void;
   setFx: (f: FxRates) => void;
   setCorrCache: (c: CorrCache | null) => void;
+  setSwaps: (s: SwapRecord[]) => void;
   store: DataProvider;
 }
 
@@ -51,11 +54,12 @@ export function DataProviderRoot({ children }: { children: ReactNode }) {
   const [quotes, setQuotes] = useState<Map<string, Quote>>(new Map());
   const [fx, setFx] = useState<FxRates>({ USDCNY: 7.05, USDHKD: 7.80 });
   const [corrCache, setCorrCache] = useState<CorrCache | null>(null);
+  const [swaps, setSwapsState] = useState<SwapRecord[]>([]);
 
   useEffect(() => {
     (async () => {
       await migrateFromLocalStorage(store);
-      const [h, g, p, pf, hist, ccy, corr] = await Promise.all([
+      const [h, g, p, pf, hist, ccy, corr, sw] = await Promise.all([
         store.getHoldings(),
         store.getGoals(),
         store.getPolicies(),
@@ -63,6 +67,7 @@ export function DataProviderRoot({ children }: { children: ReactNode }) {
         store.getHistory(),
         store.getBaseCurrency(),
         store.getCorrCache(),
+        store.getSwaps(),
       ]);
       setHoldingsState(h);
       setGoalsState(g);
@@ -71,6 +76,7 @@ export function DataProviderRoot({ children }: { children: ReactNode }) {
       setHistoryState(hist);
       setBaseCcyState(ccy);
       setCorrCache(corr);
+      setSwapsState(sw);
       setReady(true);
     })();
   }, [store]);
@@ -99,6 +105,10 @@ export function DataProviderRoot({ children }: { children: ReactNode }) {
     setHistoryState(h);
     store.saveHistory(h);
   };
+  const setSwaps = (s: SwapRecord[]) => {
+    setSwapsState(s);
+    store.saveSwaps(s);
+  };
 
   const value: AppState = {
     holdings,
@@ -110,6 +120,7 @@ export function DataProviderRoot({ children }: { children: ReactNode }) {
     quotes,
     fx,
     corrCache,
+    swaps,
     ready,
     setHoldings,
     setGoals,
@@ -120,6 +131,7 @@ export function DataProviderRoot({ children }: { children: ReactNode }) {
     setQuotes,
     setFx,
     setCorrCache,
+    setSwaps,
     store,
   };
 
