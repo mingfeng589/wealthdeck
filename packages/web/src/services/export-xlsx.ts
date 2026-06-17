@@ -121,6 +121,21 @@ export function exportToXlsx(data: ExportData): void {
   );
   XLSX.utils.book_append_sheet(wb, wsHistory, '净值历史');
 
+  // 7. Swaps sheet
+  if (data.swaps?.length) {
+    const swapRows = data.swaps.map((s) => ({
+      '日期': s.date,
+      '原资产': s.fromName,
+      '原类别': CATS[s.fromCat]?.label ?? s.fromCat,
+      '原估值': s.fromVal,
+      '币种': s.fromCcy,
+      '新资产': s.toName,
+      '备注': s.note,
+    }));
+    const wsSwaps = XLSX.utils.json_to_sheet(swapRows);
+    XLSX.utils.book_append_sheet(wb, wsSwaps, '换仓记录');
+  }
+
   // Download
   const today = new Date().toISOString().slice(0, 10);
   XLSX.writeFile(wb, `wealthdeck-${today}.xlsx`);
