@@ -16,7 +16,7 @@ export const RET_A: Record<string, number | Record<string, number>> = {
   silver: 3,
   oil: 2,
   bond: 3.5,
-  re: 4,
+  equity: 8,
   pe_equity: 10,
   pe_debt: 6,
   other: 0,
@@ -33,7 +33,7 @@ export const VOL_A: Record<string, number | Record<string, number>> = {
   silver: 28,
   oil: 35,
   bond: 6,
-  re: 10,
+  equity: 30,
   pe_equity: 20,
   pe_debt: 8,
   other: 5,
@@ -44,5 +44,5 @@ export const VOL_A: Record<string, number | Record<string, number>> = {
 export const DIV_A: Record<string, number | Record<string, number>> = {
   eq: { us: 1.3, hk: 3.5, cn: 2.5 },
   idx: { us: 1.3, hk: 3.5, cn: 2.5 },
-  re: 2,
+  equity: 2,
 };

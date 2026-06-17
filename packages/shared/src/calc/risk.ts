@@ -9,33 +9,16 @@ import { RET_A, VOL_A, DIV_A } from '../constants';
  * use the `'ccy' in h` / `'coupon' in h` guards to satisfy the type checker.
  */
 export function cls(h: Holding): AssetClassification {
-  if (h.cat === 'cash' && 'ccy' in h) return { g: 'cash', ccy: h.ccy };
-  if (h.cat === 'bond' && 'coupon' in h)
-    return { g: 'bond', coupon: h.coupon ?? undefined };
-  if (h.cat === 'realestate') return { g: 're' };
+  if (h.cat === 'equity') return { g: 'equity' };
   if (h.cat === 'pe_equity') return { g: 'pe_equity' };
   if (h.cat === 'pe_debt') return { g: 'pe_debt' };
-  if (h.cat === 'other') return { g: 'other' };
-  if (h.cat === 'commodity')
-    return {
-      g: h.sym === 'hf_SI' ? 'silver' : h.sym === 'hf_CL' ? 'oil' : 'gold',
-    };
-  if (
-    h.kind &&
-    (['bond', 'gold', 'silver', 'oil', 'crypto', 'lev'] as string[]).includes(
-      h.kind,
-    )
-  )
-    return { g: h.kind };
+  // other (另类资产)
   if (h.sym && h.sym.startsWith('cg_')) return { g: 'crypto' };
-  const mkt = h.sym
-    ? h.sym.startsWith('us')
-      ? 'us'
-      : h.sym.startsWith('hk')
-        ? 'hk'
-        : 'cn'
-    : 'us';
-  return { g: h.kind === 'idx' ? 'idx' : 'eq', mkt };
+  if (h.kind === 'crypto') return { g: 'crypto' };
+  if (h.kind === 'gold') return { g: 'gold' };
+  if (h.kind === 'silver') return { g: 'silver' };
+  if (h.kind === 'oil') return { g: 'oil' };
+  return { g: 'other' };
 }
 
 /** Expected annual return (%) for an asset classification. */
@@ -63,7 +46,7 @@ export function divOf(c: AssetClassification): number {
   if (c.g === 'bond') return c.coupon || (RET_A.bond as number);
   if (c.g === 'eq' || c.g === 'idx')
     return (DIV_A[c.g] as Record<string, number>)[c.mkt!] ?? 1.5;
-  if (c.g === 're') return DIV_A.re as number;
+  if (c.g === 'equity') return DIV_A.equity as number;
   return 0;
 }
 
@@ -86,7 +69,7 @@ export function defRho(A: AssetClassification, B: AssetClassification): number {
         silver: 0.15,
         oil: 0.3,
         bond: 0.1,
-        re: 0.3,
+        equity: 0.6,
         pe_equity: 0.7,
         pe_debt: 0.3,
         other: 0.1,
@@ -97,8 +80,8 @@ export function defRho(A: AssetClassification, B: AssetClassification): number {
     (A.g === x && B.g === y) || (A.g === y && B.g === x);
   if (pair('gold', 'silver')) return 0.8;
   if (pair('gold', 'crypto')) return 0.1;
-  if (pair('re', 'pe_equity')) return 0.3;
-  if (pair('re', 'pe_debt')) return 0.2;
+  if (pair('equity', 'pe_equity')) return 0.6;
+  if (pair('equity', 'pe_debt')) return 0.3;
   if (pair('pe_equity', 'pe_debt')) return 0.4;
   if (A.g === 'bond' || B.g === 'bond') return 0.1;
   return 0.2;

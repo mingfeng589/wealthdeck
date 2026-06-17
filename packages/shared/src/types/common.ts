@@ -1,13 +1,9 @@
 export type Currency = 'USD' | 'CNY' | 'HKD';
 
 export type CategoryKey =
-  | 'securities'
-  | 'bond'
-  | 'commodity'
-  | 'realestate'
+  | 'equity'
   | 'pe_equity'
   | 'pe_debt'
-  | 'cash'
   | 'other';
 
 export interface Category {
