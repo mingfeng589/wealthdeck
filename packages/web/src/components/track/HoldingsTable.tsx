@@ -18,7 +18,7 @@ export interface HoldingsTableProps {
   rows: HoldingsRow[];
   baseCcy: Currency;
   onEdit: (id: string) => void;
-  onDelete: (id: string) => void;
+  onSwap?: (id: string) => void;
   goals?: Goal[];
 }
 
@@ -40,7 +40,7 @@ const HoldingsTable: React.FC<HoldingsTableProps> = ({
   rows,
   baseCcy,
   onEdit,
-  onDelete,
+  onSwap,
   goals = [],
 }) => (
   <div className={styles.card}>
@@ -105,12 +105,12 @@ const HoldingsTable: React.FC<HoldingsTableProps> = ({
                   ? `${pl >= 0 ? '+' : ''}${fmt(pl, baseCcy)}`
                   : '--'}
               </td>
-              <td>
+              <td style={{ whiteSpace: 'nowrap' }}>
                 <button className={styles.act} onClick={() => onEdit(h.id)}>
                   编辑
                 </button>
-                <button className={styles.act} onClick={() => onDelete(h.id)}>
-                  删除
+                <button className={styles.act} onClick={() => onSwap?.(h.id)}>
+                  换仓
                 </button>
               </td>
             </tr>

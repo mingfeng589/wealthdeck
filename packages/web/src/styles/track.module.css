@@ -75,7 +75,7 @@
 
 .chartBox {
   position: relative;
-  height: 225px;
+  height: 280px;
 }
 
 /* ---- pulse panel ---- */
@@ -183,6 +183,82 @@
   height: 14px;
 }
 
+/* ---- category summary cards ---- */
+
+.catCards {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+.catCard {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 12px 14px;
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.catDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  margin-top: 5px;
+  flex-shrink: 0;
+}
+
+.catInfo {
+  flex: 1;
+  min-width: 0;
+}
+
+.catInfo .catLabel {
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.catInfo .catVal {
+  font-size: 18px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  margin-top: 2px;
+}
+
+.catInfo .catSub {
+  font-size: 11px;
+  color: var(--muted);
+  margin-top: 2px;
+}
+
+/* ---- profit/loss summary ---- */
+
+.plCard {
+  composes: card;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+}
+
+.plItem .t {
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.plItem .v {
+  font-size: 18px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  margin-top: 4px;
+}
+
+.plItem .s {
+  font-size: 12px;
+  margin-top: 2px;
+}
+
 /* ---- responsive ---- */
 
 @media (max-width: 1100px) {
@@ -206,6 +282,22 @@
   }
 
   .chartBox {
-    height: 180px;
+    height: 220px;
+  }
+
+  .catCards {
+    grid-template-columns: 1fr;
+  }
+
+  .plCard {
+    grid-template-columns: 1fr;
+  }
+
+  .plItem .v {
+    font-size: 16px;
+  }
+
+  .catInfo .catVal {
+    font-size: 16px;
   }
 }

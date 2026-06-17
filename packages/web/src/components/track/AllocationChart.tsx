@@ -18,13 +18,17 @@ export interface AllocationCategory {
 
 export interface AllocationChartProps {
   categories: AllocationCategory[];
+  fmtValue?: (v: number) => string;
 }
 
-/**
- * Doughnut chart of asset allocation by category.
- * Matches wealthdeck.html drawCharts() doughnut logic (lines 698-709).
- */
-const AllocationChart: React.FC<AllocationChartProps> = ({ categories }) => {
+const defaultFmt = (v: number) =>
+  v >= 1e6
+    ? `$${(v / 1e6).toFixed(1)}M`
+    : v >= 1e3
+      ? `$${(v / 1e3).toFixed(0)}K`
+      : `$${v.toFixed(0)}`;
+
+const AllocationChart: React.FC<AllocationChartProps> = ({ categories, fmtValue = defaultFmt }) => {
   const data = useMemo(
     () => ({
       labels: categories.map((c) => c.label),
@@ -49,12 +53,12 @@ const AllocationChart: React.FC<AllocationChartProps> = ({ categories }) => {
           position: 'right' as const,
           labels: {
             boxWidth: 10,
-            font: { size: 11 },
+            font: { size: 12 },
             generateLabels(chart: ChartJS<'doughnut'>) {
               const ds = chart.data.datasets[0].data as number[];
               const total = ds.reduce((a, b) => a + b, 0) || 1;
               return (chart.data.labels || []).map((l, i) => ({
-                text: `${l as string} ${((ds[i] / total) * 100).toFixed(1)}%`,
+                text: `${l as string}  ${((ds[i] / total) * 100).toFixed(1)}%  ${fmtValue(ds[i])}`,
                 fillStyle: (chart.data.datasets[0].backgroundColor as string[])[i],
                 lineWidth: 0,
               }));
@@ -63,7 +67,7 @@ const AllocationChart: React.FC<AllocationChartProps> = ({ categories }) => {
         },
       },
     }),
-    [],
+    [fmtValue],
   );
 
   return (
