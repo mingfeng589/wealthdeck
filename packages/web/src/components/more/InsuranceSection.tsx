@@ -11,24 +11,11 @@ interface InsuranceSectionProps {
 }
 
 export function InsuranceSection({ onAddPolicy, onEditPolicy, onDeletePolicy }: InsuranceSectionProps) {
-  const { policies, profile, setProfile, baseCcy, fx, holdings, quotes } = useAppState();
+  const { policies, profile, setProfile, baseCcy, fx } = useAppState();
 
   const [income, setIncome] = useState(String(profile.income || ''));
   const [spend, setSpend] = useState(String(profile.spend || ''));
   const [debt, setDebt] = useState(String(profile.debt || ''));
-
-  const cash = useMemo(() => {
-    return holdings
-      .filter((h) => h.cat === 'cash')
-      .reduce((s, h) => {
-        if (h.sym) {
-          const q = quotes.get(h.sym);
-          return s + (q ? inBase(q.price * h.qty, q.ccy, baseCcy, fx) : 0);
-        }
-        const m = h as any;
-        return s + inBase(m.val, m.ccy, baseCcy, fx);
-      }, 0);
-  }, [holdings, quotes, baseCcy, fx]);
 
   const saveProfile = () => {
     setProfile({
@@ -39,8 +26,8 @@ export function InsuranceSection({ onAddPolicy, onEditPolicy, onDeletePolicy }: 
   };
 
   const checks = useMemo(
-    () => computeInsuranceChecks({ profile, policies, cash, baseCcy, fx }),
-    [profile, policies, cash, baseCcy, fx],
+    () => computeInsuranceChecks({ profile, policies, cash: 0, baseCcy, fx }),
+    [profile, policies, baseCcy, fx],
   );
 
   const prem = useMemo(

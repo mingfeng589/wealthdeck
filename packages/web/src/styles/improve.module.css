@@ -106,6 +106,35 @@
   font-size: 12px;
 }
 
+.chartWrap {
+  margin: 14px 0;
+  height: 280px;
+}
+
+.subTitle {
+  font-size: 13px;
+  font-weight: 700;
+  margin: 14px 0 8px;
+}
+
+.breakdownTable {
+  width: 100%;
+  font-size: 13px;
+}
+
+.breakdownTable th {
+  font-size: 11px;
+  color: var(--muted);
+  font-weight: 400;
+  padding: 4px 8px;
+  border-bottom: 1px solid var(--line);
+}
+
+.breakdownTable td {
+  padding: 8px;
+  border-bottom: 1px solid var(--line);
+}
+
 /* ---- responsive ---- */
 
 @media (max-width: 1100px) {
@@ -118,6 +147,10 @@
   .statgrid {
     grid-template-columns: 1fr 1fr;
     gap: 8px;
+  }
+
+  .chartWrap {
+    height: 220px;
   }
 
   .scoreWrap {

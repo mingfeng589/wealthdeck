@@ -15,7 +15,6 @@ export function PortfolioScore({ rows, total }: PortfolioScoreProps) {
   const result = useMemo(() => {
     if (total <= 0) return null;
 
-    const cash = rows.filter((r) => r.h.cat === 'cash').reduce((s, r) => s + r.val, 0);
     const catSet = new Set(rows.filter((r) => r.val > 0).map((r) => r.h.cat));
     const scoringRows = rows.map((r) => ({
       h: r.h,
@@ -23,7 +22,7 @@ export function PortfolioScore({ rows, total }: PortfolioScoreProps) {
       liveName: r.liveName,
     }));
 
-    return computePortfolioScore({ total, cash, rows: scoringRows, catSet, corrCache });
+    return computePortfolioScore({ total, rows: scoringRows, catSet, corrCache });
   }, [rows, total, corrCache]);
 
   if (!result) {
